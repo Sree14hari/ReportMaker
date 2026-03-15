@@ -66,12 +66,13 @@ export default function TitlePagePreview() {
             style={{ height: '110px', width: 'auto' }}
           />
         ) : (
-          <div
-            className="mx-auto rounded-full border-2 border-gray-400 flex items-center justify-center text-gray-400 text-xs"
-            style={{ height: '110px', width: '110px' }}
-          >
-            Logo
-          </div>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/sbce_logo.png"
+            alt="Default College Logo"
+            className="mx-auto object-contain"
+            style={{ height: '110px', width: 'auto' }}
+          />
         )}
       </div>
 

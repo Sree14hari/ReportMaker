@@ -19,6 +19,7 @@ import {
   Heading3,
   Pilcrow,
   TableIcon,
+  ImageIcon,
 } from 'lucide-react';
 
 interface ToolbarButtonProps {
@@ -54,6 +55,7 @@ function ToolbarButton({ onClick, isActive, disabled, title, children }: Toolbar
 function Divider() {
   return <div className="w-px h-5 bg-gray-200 mx-1" />;
 }
+import { useRef } from 'react';
 
 interface EditorToolbarProps {
   editor: Editor | null;
@@ -62,10 +64,38 @@ interface EditorToolbarProps {
 }
 
 export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTableControls }: EditorToolbarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!editor) return null;
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
+          // @ts-ignore
+          editor.chain().focus().setImage({ src: result }).run();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
       {/* Text style */}
       <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold">
         <Bold size={14} />
@@ -124,7 +154,10 @@ export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTable
 
       <Divider />
 
-      {/* Table */}
+      {/* Insert */}
+      <ToolbarButton onClick={() => fileInputRef.current?.click()} title="Insert Image">
+        <ImageIcon size={14} />
+      </ToolbarButton>
       <ToolbarButton onClick={onInsertTable} title="Insert Table">
         <TableIcon size={14} />
       </ToolbarButton>

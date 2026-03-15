@@ -1,16 +1,31 @@
 'use client';
 // lib/store.ts
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
+import { get, set as idbSet, del } from 'idb-keyval';
 import { ReportStore, SectionType, ReportMeta } from './reportTypes';
 import { sectionTemplates } from './sectionTemplates';
 
+// Custom IndexedDB storage for Zustand to break localStorage's 5MB limit
+const idbStorage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await idbSet(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await del(name);
+  },
+};
+
 const defaultMeta: ReportMeta = {
   title: '',
+  headerContent: '',
   subtitle: 'Mini Project Report',
   studentNames: [{ name: '', rollNo: '' }],
-  universityName: 'APJ Abdul Kalam Technological University',
+  universityName: '',
   degree: 'Bachelor of Technology',
   branch: 'Electronics and Communication Engineering',
   collegeName: '',
@@ -77,6 +92,9 @@ export const useReportStore = create<ReportStore>()(
 
       setActiveSection: (id) => set({ activeSectionId: id }),
     }),
-    { name: 'report-store' }
+    { 
+      name: 'report-store',
+      storage: createJSONStorage(() => idbStorage)
+    }
   )
 );

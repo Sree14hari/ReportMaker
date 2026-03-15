@@ -65,6 +65,9 @@ export default function MetadataPanel() {
                   <Field label="Project Title">
                     <input type="text" value={meta.title} onChange={(e) => setMeta({ title: e.target.value })} placeholder="e.g. EEG STRESS MONITORING SYSTEM" className={inputCls} />
                   </Field>
+                  <Field label="Header Content (Optional)">
+                    <input type="text" value={meta.headerContent || ''} onChange={(e) => setMeta({ headerContent: e.target.value })} placeholder="Custom text to show on paginated headers" className={inputCls} />
+                  </Field>
                   <Field label="Subtitle">
                     <input type="text" value={meta.subtitle} onChange={(e) => setMeta({ subtitle: e.target.value })} placeholder="e.g. Mini Project Report" className={inputCls} />
                   </Field>

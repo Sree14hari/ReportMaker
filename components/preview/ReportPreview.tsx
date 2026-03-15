@@ -7,7 +7,6 @@ import TableOfContentsPreview from './sections/TableOfContentsPreview';
 import ChapterPreview, { resolvePlaceholders } from './sections/ChapterPreview';
 import { ReportSection } from '@/lib/reportTypes';
 import { useRef, useEffect, useState } from 'react';
-import DOMPurify from 'dompurify';
 import { paginateHtml } from '@/lib/pagination';
 
 type PageData = {
@@ -93,9 +92,7 @@ export default function ReportPreview() {
 
       if (isPaginatable && section.content) {
         const resolved = resolvePlaceholders(section.content, meta as any);
-        const sanitized = typeof window !== 'undefined' ? DOMPurify.sanitize(resolved) : resolved;
-
-        const chunks = paginateHtml(sanitized, 850, section.type === 'chapter' ? 700 : 850);
+        const chunks = paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
 
         chunks.forEach((chunk, idx) => {
           // If first chunk, it gets the chapter index (to show title)
@@ -201,7 +198,7 @@ export default function ReportPreview() {
                           {showArabicPageNumber ? (
                             <>
                               <div className="flex justify-between items-end pb-1 border-b-[1.5px] border-black text-[12pt]">
-                                <span>{meta.title || 'PROJECT TITLE'}</span>
+                                <span>{meta.headerContent || meta.title || 'PROJECT TITLE'}</span>
                               </div>
                               <div style={{ height: '24px' }}></div>
                             </>

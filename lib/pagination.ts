@@ -30,7 +30,9 @@ export function paginateHtml(
   let lastIndex = childrenArray.length - 1;
   while (lastIndex >= 0) {
     const el = childrenArray[lastIndex] as HTMLElement;
-    if (!el.textContent?.trim() && !el.querySelector('img') && !el.querySelector('table')) {
+    const isImg = el.tagName.toLowerCase() === 'img' || el.querySelector('img');
+    const isTable = el.tagName.toLowerCase() === 'table' || el.querySelector('table');
+    if (!el.textContent?.trim() && !isImg && !isTable) {
       measureDiv.removeChild(el);
       lastIndex--;
     } else {
@@ -42,7 +44,9 @@ export function paginateHtml(
   let consecutiveEmptyCount = 0;
   Array.from(measureDiv.children).forEach((el) => {
     const htmlEl = el as HTMLElement;
-    if (!htmlEl.textContent?.trim() && !htmlEl.querySelector('img') && !htmlEl.querySelector('table')) {
+    const isImg = htmlEl.tagName.toLowerCase() === 'img' || htmlEl.querySelector('img');
+    const isTable = htmlEl.tagName.toLowerCase() === 'table' || htmlEl.querySelector('table');
+    if (!htmlEl.textContent?.trim() && !isImg && !isTable) {
       consecutiveEmptyCount++;
       if (consecutiveEmptyCount > 2) {
         measureDiv.removeChild(htmlEl);

@@ -25,6 +25,7 @@ export interface ReportSection {
 
 export interface ReportMeta {
   title: string;
+  headerContent?: string;
   subtitle: string;
   studentNames: { name: string; rollNo: string }[];
   universityName: string;

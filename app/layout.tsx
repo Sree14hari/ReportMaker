@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KTU Report Formatter",
-  description: "Compose and format APJ KTU-style academic project reports with live A4 preview and PDF export",
+  title: "The Reporter",
+  description: "Compose and format academic project reports with live A4 preview and PDF export",
+  icons: {
+    icon: "/image.png",
+  },
 };
 
 export default function RootLayout({

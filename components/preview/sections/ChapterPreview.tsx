@@ -2,7 +2,6 @@
 // components/preview/sections/ChapterPreview.tsx
 import { ReportSection } from '@/lib/reportTypes';
 import { useReportStore } from '@/lib/store';
-import DOMPurify from 'dompurify';
 
 interface ChapterPreviewProps {
   section: ReportSection;
@@ -59,10 +58,6 @@ export default function ChapterPreview({ section, chapterIndex, contentHtml, hid
   const resolved = contentHtml !== undefined 
     ? contentHtml 
     : resolvePlaceholders(section.content, meta as unknown as Record<string, string | { name: string; rollNo: string }[]>);
-    
-  const sanitized = contentHtml !== undefined
-    ? contentHtml
-    : (typeof window !== 'undefined' ? DOMPurify.sanitize(resolved) : resolved);
 
   return (
     <div className="flex flex-col h-full">
@@ -81,7 +76,7 @@ export default function ChapterPreview({ section, chapterIndex, contentHtml, hid
       <div
         className={`report-content text-[12pt] leading-relaxed text-justify ${chapterIndex ? 'numbered-chapter' : ''}`}
         style={chapterIndex ? { '--chapter-index': `"${chapterIndex}"` } as React.CSSProperties : undefined}
-        dangerouslySetInnerHTML={{ __html: sanitized }}
+        dangerouslySetInnerHTML={{ __html: resolved }}
       />
     </div>
   );

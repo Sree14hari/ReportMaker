@@ -90,12 +90,13 @@ export default function CertificatePreview({ section }: CertificatePreviewProps)
               style={{ height: '140px', width: 'auto' }}
             />
           ) : (
-            <div
-              className="mx-auto rounded-full border-2 border-gray-400 flex items-center justify-center text-gray-400 text-xs"
-              style={{ height: '140px', width: '140px' }}
-            >
-              Logo
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/sbce_logo.png"
+              alt="Default College Logo"
+              className="mx-auto object-contain"
+              style={{ height: '140px', width: 'auto' }}
+            />
           )}
         </div>
 

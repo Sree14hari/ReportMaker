@@ -10,6 +10,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Placeholder } from '@tiptap/extension-placeholder';
+import ImageResize from 'tiptap-extension-resize-image';
 import { useReportStore } from '@/lib/store';
 import EditorToolbar from './EditorToolbar';
 
@@ -34,6 +35,7 @@ export default function SectionEditor() {
       TableRow,
       TableHeader,
       TableCell,
+      ImageResize,
       Placeholder.configure({ placeholder: 'Start writing your section content here...' }),
     ],
     content: activeSection?.content ?? '',
