@@ -75,8 +75,14 @@ export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTable
       reader.onload = (event) => {
         const result = event.target?.result;
         if (typeof result === 'string') {
-          // @ts-ignore
-          editor.chain().focus().setImage({ src: result }).run();
+          const figureLabel = window.prompt("Enter Figure Label (e.g., Fig 3.2: Circuit Diagram):");
+          if (figureLabel) {
+            // @ts-ignore
+            editor.chain().focus().setImage({ src: result }).insertContent(`<p style="text-align: center;">${figureLabel}</p>`).run();
+          } else {
+            // @ts-ignore
+            editor.chain().focus().setImage({ src: result }).run();
+          }
         }
       };
       reader.readAsDataURL(file);
