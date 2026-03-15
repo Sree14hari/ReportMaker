@@ -76,12 +76,12 @@ export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTable
         const result = event.target?.result;
         if (typeof result === 'string') {
           const figureLabel = window.prompt("Enter Figure Label (e.g., Fig 3.2: Circuit Diagram):");
+          // @ts-ignore
+          editor.chain().focus().setImage({ src: result }).run();
+          
           if (figureLabel) {
             // @ts-ignore
-            editor.chain().focus().setImage({ src: result }).insertContent(`<p style="text-align: center;">${figureLabel}</p>`).run();
-          } else {
-            // @ts-ignore
-            editor.chain().focus().setImage({ src: result }).run();
+            editor.chain().focus().insertContentAt(editor.state.selection.to, `<p style="text-align: center;">${figureLabel}</p>`).run();
           }
         }
       };
