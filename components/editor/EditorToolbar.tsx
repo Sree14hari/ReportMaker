@@ -39,12 +39,12 @@ function ToolbarButton({ onClick, isActive, disabled, title, children }: Toolbar
         onClick();
       }}
       title={title}
-      className={`p-1.5 rounded-md text-sm transition-all ${
+      className={`p-1.5 flex items-center justify-center rounded-lg text-sm transition-all duration-150 active:scale-95 ${
         isActive
-          ? 'bg-blue-600 text-white shadow-sm'
+          ? 'bg-blue-100 text-blue-700 font-semibold'
           : disabled
           ? 'text-gray-300 cursor-not-allowed'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          : 'text-gray-600 hover:bg-gray-100 hover:text-slate-900'
       }`}
     >
       {children}
@@ -88,7 +88,7 @@ export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTable
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+    <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5 border-b border-gray-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10 w-full overflow-x-auto shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
       <input
         type="file"
         ref={fileInputRef}

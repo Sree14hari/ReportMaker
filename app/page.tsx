@@ -15,7 +15,7 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
       {/* ── Header ── */}
       {/* ── Header ── */}
-      <header id="main-header" className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0">
+      <header id="main-header" className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-50 relative flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -35,9 +35,9 @@ export default function Home() {
       {/* ── 3-Panel Body ── */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Section Manager — 260px */}
-        <aside id="left-sidebar" className="w-64 flex-shrink-0 flex flex-col bg-white border-r border-gray-200 overflow-hidden">
-          <div className="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">Sections</h2>
+        <aside id="left-sidebar" className="w-64 flex-shrink-0 flex flex-col bg-slate-50/50 border-r border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 bg-white">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Sections</h2>
           </div>
           <SectionDropdown />
           <SectionList />
@@ -45,16 +45,16 @@ export default function Home() {
 
         {/* CENTER: Editor — flex */}
         <main id="center-editor" className="flex-1 flex flex-col bg-white border-r border-gray-200 overflow-hidden min-w-0">
-          <div className="px-4 py-2.5 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">Editor</h2>
+          <div className="px-5 py-3 border-b border-gray-100 bg-white shadow-sm z-10">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Editor</h2>
           </div>
           <SectionEditor />
         </main>
 
         {/* RIGHT: Preview — 500px */}
-        <aside id="right-sidebar" className="w-[500px] flex-shrink-0 flex flex-col overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-200 bg-gray-50 flex-shrink-0 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">Preview (A4)</h2>
+        <aside id="right-sidebar" className="w-[500px] flex-shrink-0 flex flex-col bg-slate-100/80 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-200 bg-white shadow-sm flex-shrink-0 flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Preview (A4)</h2>
             <span className="text-xs text-gray-400">Times New Roman · 12pt</span>
           </div>
           <ReportPreview />

@@ -3,7 +3,6 @@
 export type SectionType =
   | 'title-page'
   | 'certificate'
-  | 'declaration'
   | 'acknowledgement'
   | 'abstract'
   | 'table-of-contents'
@@ -11,8 +10,6 @@ export type SectionType =
   | 'list-of-tables'
   | 'chapter'
   | 'results'
-  | 'advantages-disadvantages'
-  | 'conclusion'
   | 'references';
 
 export interface ReportSection {
@@ -49,6 +46,8 @@ export interface ReportStore {
   meta: ReportMeta;
   sections: ReportSection[];
   activeSectionId: string | null;
+  isActivated: boolean;
+  setActivated: (val: boolean) => void;
   setMeta: (meta: Partial<ReportMeta>) => void;
   addSection: (type: SectionType) => void;
   removeSection: (id: string) => void;

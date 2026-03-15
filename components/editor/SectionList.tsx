@@ -42,28 +42,34 @@ function SectionItem({ section, isActive }: { section: ReportSection; isActive: 
       ref={setNodeRef}
       style={style}
       onClick={() => setActiveSection(section.id)}
-      className={`group flex items-center gap-1 px-2 py-2 rounded-lg cursor-pointer text-sm transition-all ${
+      className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all duration-200 border ${
         isActive
-          ? 'bg-blue-600 text-white shadow-md'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'bg-blue-50/80 border-blue-200 text-blue-900 shadow-[0_2px_10px_-4px_rgba(59,130,246,0.3)]'
+          : 'bg-transparent border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-200'
       }`}
     >
       <span
         {...attributes}
         {...listeners}
-        className={`cursor-grab p-1 rounded ${isActive ? 'text-blue-200 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
+        className={`cursor-grab p-1 rounded-md transition-colors ${
+          isActive ? 'text-blue-400 hover:text-blue-600 hover:bg-blue-100/50' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-200/50'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <GripVertical size={14} />
       </span>
-      <span className="flex-1 truncate font-medium">{section.title}</span>
+      <span className={`flex-1 truncate ${isActive ? 'font-semibold' : 'font-medium'}`}>
+        {section.title}
+      </span>
       <button
         onClick={(e) => {
           e.stopPropagation();
           removeSection(section.id);
         }}
-        className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
-          isActive ? 'hover:bg-blue-700 text-blue-100 hover:text-white' : 'hover:bg-red-100 text-gray-400 hover:text-red-600'
+        className={`p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all ${
+          isActive 
+            ? 'text-blue-400 hover:text-red-500 hover:bg-red-50' 
+            : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
         }`}
       >
         <Trash2 size={13} />

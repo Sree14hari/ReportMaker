@@ -46,7 +46,7 @@ export default function SectionEditor() {
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] p-4 text-gray-800',
+        class: 'prose mx-auto prose-sm max-w-none focus:outline-none min-h-[800px] p-8 sm:p-12 text-gray-800',
       },
     },
   });
@@ -103,12 +103,12 @@ export default function SectionEditor() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Section title input */}
-      <div className="px-4 py-2 border-b border-gray-200 bg-white">
+      <div className="px-5 py-4 bg-white z-10 shadow-sm relative">
         <input
           type="text"
           value={activeSection.title}
           onChange={(e) => updateSection(activeSection.id, { title: e.target.value })}
-          className="w-full text-base font-semibold text-gray-800 border-none outline-none bg-transparent placeholder-gray-400"
+          className="w-full text-2xl font-bold text-slate-800 border-none outline-none bg-transparent placeholder-slate-300 transition-colors focus:placeholder-slate-200"
           placeholder="Section Title"
         />
       </div>
@@ -121,8 +121,10 @@ export default function SectionEditor() {
       />
 
       {/* Editor */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        <EditorContent editor={editor} />
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 sm:p-8">
+        <div className="max-w-4xl mx-auto bg-white shadow-sm border border-gray-200/60 rounded-sm min-h-[800px] hover:shadow-md transition-shadow duration-300">
+          <EditorContent editor={editor} />
+        </div>
       </div>
 
       {/* Table Dialog */}

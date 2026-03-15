@@ -48,6 +48,8 @@ export const useReportStore = create<ReportStore>()(
       meta: defaultMeta,
       sections: [],
       activeSectionId: null,
+      isActivated: false,
+      setActivated: (val) => set({ isActivated: val }),
 
       setMeta: (updates) =>
         set((state) => ({ meta: { ...state.meta, ...updates } })),
