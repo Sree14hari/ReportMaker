@@ -8,6 +8,7 @@ import { Plus, ChevronDown, Check } from 'lucide-react';
 const SECTION_OPTIONS: { value: SectionType; label: string }[] = [
   { value: 'title-page', label: 'Title Page' },
   { value: 'certificate', label: 'Certificate' },
+  { value: 'declaration', label: 'Declaration' },
   { value: 'acknowledgement', label: 'Acknowledgement' },
   { value: 'abstract', label: 'Abstract' },
   { value: 'table-of-contents', label: 'Table of Contents' },

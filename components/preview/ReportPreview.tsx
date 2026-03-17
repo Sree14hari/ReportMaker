@@ -3,11 +3,13 @@
 import { useReportStore } from '@/lib/store';
 import TitlePagePreview from './sections/TitlePagePreview';
 import CertificatePreview from './sections/CertificatePreview';
+import DeclarationPreview from './sections/DeclarationPreview';
 import TableOfContentsPreview from './sections/TableOfContentsPreview';
 import ChapterPreview, { resolvePlaceholders } from './sections/ChapterPreview';
 import { ReportSection } from '@/lib/reportTypes';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { paginateHtml } from '@/lib/pagination';
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 type PageData = {
   id: string;
@@ -27,6 +29,8 @@ function SectionRenderer({ section, chapterIndex, contentHtml, hideTitle }: { se
       return <TitlePagePreview />;
     case 'certificate':
       return <CertificatePreview section={section} />;
+    case 'declaration':
+      return <DeclarationPreview section={section} contentHtml={contentHtml} />;
     case 'table-of-contents':
       return <TableOfContentsPreview />;
     default:
@@ -46,17 +50,23 @@ export default function ReportPreview() {
   const sections = useReportStore((s) => s.sections);
   const meta = useReportStore((s) => s.meta);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [fitScale, setFitScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
   const [pages, setPages] = useState<PageData[]>([]);
 
-  // Dynamically compute scale so A4 page fits the container width
+  const scale = fitScale * userZoom;
+
+  const zoomIn  = useCallback(() => setUserZoom(z => Math.min(3, parseFloat((z + 0.1).toFixed(1)))), []);
+  const zoomOut = useCallback(() => setUserZoom(z => Math.max(0.2, parseFloat((z - 0.1).toFixed(1)))), []);
+  const zoomFit = useCallback(() => setUserZoom(1), []);
+
+  // Dynamically compute fitScale so A4 page fits the container width
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const update = () => {
       const available = el.clientWidth - 32; // 16px padding each side
-      const newScale = Math.min(1, available / A4_WIDTH_PX);
-      setScale(newScale);
+      setFitScale(Math.min(1, available / A4_WIDTH_PX));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -84,7 +94,7 @@ export default function ReportPreview() {
       }
 
       const showArabic = !isPreChapter;
-      const showRoman = isPreChapter && !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
+      const showRoman = isPreChapter && !['title-page', 'certificate', 'declaration', 'table-of-contents'].includes(section.type);
 
       const chapterIndex = showArabic && section.type !== 'references' && isActualChapterText ? currentChapterIndex : null;
 
@@ -146,7 +156,47 @@ export default function ReportPreview() {
   const scaledHeight = (1123 * totalPages + 32 * (totalPages > 0 ? totalPages - 1 : 0)) * scale;
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto bg-gray-300 p-4">
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Zoom toolbar */}
+      <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-slate-800 border-b border-slate-700 flex-shrink-0">
+        <button
+          onClick={zoomOut}
+          title="Zoom Out"
+          className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+        >
+          <ZoomOut size={14} />
+        </button>
+        <span className="text-xs text-slate-300 font-mono w-14 text-center select-none">
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          onClick={zoomIn}
+          title="Zoom In"
+          className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+        >
+          <ZoomIn size={14} />
+        </button>
+        <div className="w-px h-4 bg-slate-600 mx-1" />
+        <button
+          onClick={zoomFit}
+          title="Fit to Width"
+          className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+        >
+          <Maximize2 size={13} />
+        </button>
+      </div>
+
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-gray-300 p-4"
+        onWheel={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) zoomIn();
+            else zoomOut();
+          }
+        }}
+      >
       <div
         style={{
           width: A4_WIDTH_PX * scale,
@@ -246,6 +296,7 @@ export default function ReportPreview() {
             })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

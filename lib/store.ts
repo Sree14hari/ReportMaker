@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import { get, set as idbSet, del } from 'idb-keyval';
-import { ReportStore, SectionType, ReportMeta } from './reportTypes';
+import { ReportStore, SectionType, ReportMeta, ReportSection } from './reportTypes';
 import { sectionTemplates } from './sectionTemplates';
 
 // Custom IndexedDB storage for Zustand to break localStorage's 5MB limit
@@ -39,15 +39,81 @@ const defaultMeta: ReportMeta = {
   hodName: '',
   hodDesignation: 'Professor and Head',
   principalName: 'Dr. K Krishna Kumar',
+  projectCoordinatorName: '',
+  projectCoordinatorDesignation: 'Assistant Professor',
   logoUrl: '',
 };
+
+function buildDefaultSections(): ReportSection[] {
+  const sections: ReportSection[] = [
+    {
+      id: nanoid(),
+      type: 'title-page',
+      title: sectionTemplates['title-page'].defaultTitle,
+      content: sectionTemplates['title-page'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'declaration',
+      title: sectionTemplates['declaration'].defaultTitle,
+      content: sectionTemplates['declaration'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'certificate',
+      title: sectionTemplates['certificate'].defaultTitle,
+      content: sectionTemplates['certificate'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'acknowledgement',
+      title: sectionTemplates['acknowledgement'].defaultTitle,
+      content: sectionTemplates['acknowledgement'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'abstract',
+      title: sectionTemplates['abstract'].defaultTitle,
+      content: sectionTemplates['abstract'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'table-of-contents',
+      title: sectionTemplates['table-of-contents'].defaultTitle,
+      content: sectionTemplates['table-of-contents'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'list-of-figures',
+      title: sectionTemplates['list-of-figures'].defaultTitle,
+      content: sectionTemplates['list-of-figures'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'list-of-tables',
+      title: sectionTemplates['list-of-tables'].defaultTitle,
+      content: sectionTemplates['list-of-tables'].defaultContent,
+    },
+    {
+      id: nanoid(),
+      type: 'chapter',
+      title: 'Chapter 1',
+      content: sectionTemplates['chapter'].defaultContent,
+      chapterNumber: 1,
+    },
+  ];
+
+  return sections;
+}
+
+const defaultSections = buildDefaultSections();
 
 export const useReportStore = create<ReportStore>()(
   persist(
     (set, get) => ({
       meta: defaultMeta,
-      sections: [],
-      activeSectionId: null,
+      sections: defaultSections,
+      activeSectionId: defaultSections[0].id,
       isActivated: false,
       setActivated: (val) => set({ isActivated: val }),
 

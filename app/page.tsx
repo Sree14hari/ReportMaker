@@ -1,19 +1,47 @@
 'use client';
 // app/page.tsx
 import dynamic from 'next/dynamic';
-import MetadataPanel from '@/components/MetadataPanel';
 import PDFDownloadButton from '@/components/PDFDownloadButton';
+import TemplateDropdown from '@/components/TemplateDropdown';
 import SectionDropdown from '@/components/editor/SectionDropdown';
-import SectionList from '@/components/editor/SectionList';
+import { useRef, useState, useCallback } from 'react';
 
 // SSR-disabled components
+const SectionList = dynamic(() => import('@/components/editor/SectionList'), { ssr: false });
 const SectionEditor = dynamic(() => import('@/components/editor/SectionEditor'), { ssr: false });
 const ReportPreview = dynamic(() => import('@/components/preview/ReportPreview'), { ssr: false });
 
 export default function Home() {
+  const [previewWidth, setPreviewWidth] = useState(500);
+  const isDragging = useRef(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback(() => {
+    isDragging.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current || !bodyRef.current) return;
+      const bodyRect = bodyRef.current.getBoundingClientRect();
+      const newWidth = bodyRect.right - e.clientX;
+      setPreviewWidth(Math.max(320, Math.min(900, newWidth)));
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
-      {/* ── Header ── */}
       {/* ── Header ── */}
       <header id="main-header" className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-50 relative flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -26,14 +54,14 @@ export default function Home() {
             <p className="text-[10px] text-gray-400">made with love by SHR</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <MetadataPanel />
+        <div className="flex items-center gap-3">
+          <TemplateDropdown />
           <PDFDownloadButton />
         </div>
       </header>
 
       {/* ── 3-Panel Body ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div ref={bodyRef} className="flex flex-1 overflow-hidden">
         {/* LEFT: Section Manager — 260px */}
         <aside id="left-sidebar" className="w-64 flex-shrink-0 flex flex-col bg-slate-50/50 border-r border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-200 bg-white">
@@ -51,8 +79,21 @@ export default function Home() {
           <SectionEditor />
         </main>
 
-        {/* RIGHT: Preview — 500px */}
-        <aside id="right-sidebar" className="w-[500px] flex-shrink-0 flex flex-col bg-slate-100/80 overflow-hidden">
+        {/* Resize Handle */}
+        <div
+          onMouseDown={onMouseDown}
+          className="w-1.5 flex-shrink-0 bg-slate-200 hover:bg-blue-400 active:bg-blue-500 cursor-col-resize transition-colors group relative"
+          title="Drag to resize preview"
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+        </div>
+
+        {/* RIGHT: Preview — resizable */}
+        <aside
+          id="right-sidebar"
+          className="flex-shrink-0 flex flex-col bg-slate-100/80 overflow-hidden"
+          style={{ width: previewWidth }}
+        >
           <div className="px-5 py-3 border-b border-gray-200 bg-white shadow-sm flex-shrink-0 flex items-center justify-between">
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Preview (A4)</h2>
             <span className="text-xs text-gray-400">Times New Roman · 12pt</span>

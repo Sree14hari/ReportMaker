@@ -7,90 +7,98 @@ const toRoman = (num: number) => {
   return roman[num] || num.toString();
 };
 
+// Types that get NO page number
+const NO_NUMBER_TYPES = new Set(['title-page', 'certificate', 'declaration', 'table-of-contents']);
+// Types that are "pre-chapter" (before chapter content starts)
+const PRE_CHAPTER_TYPES = new Set([
+  'title-page', 'certificate', 'declaration', 'acknowledgement',
+  'abstract', 'table-of-contents', 'list-of-figures', 'list-of-tables'
+]);
+// Types that get arabic page numbers
+const CHAPTER_TYPES = new Set(['chapter', 'results', 'references']);
+
 export default function TableOfContentsPreview() {
   const sections = useReportStore((s) => s.sections);
 
-  // Exclude non-TOC items
-  const tocEntries = sections.filter(
-    (s) => !['title-page', 'certificate', 'table-of-contents'].includes(s.type)
-  );
+  // ── Step 1: Walk all sections, assign page numbers exactly like ReportPreview ──
+  let arabicCounter = 1;
+  let romanCounter = 1;
+  const pageMap = new Map<string, string>(); // sectionId → page label string
 
-  const getSubsections = (html: string) => {
+  sections.forEach((section) => {
+    const isPreChapter = PRE_CHAPTER_TYPES.has(section.type);
+    const showArabic = !isPreChapter;
+    const showRoman  = isPreChapter && !NO_NUMBER_TYPES.has(section.type);
+
+    if (showArabic) {
+      pageMap.set(section.id, arabicCounter.toString());
+      arabicCounter++;
+    } else if (showRoman) {
+      pageMap.set(section.id, toRoman(romanCounter));
+      romanCounter++;
+    } else {
+      pageMap.set(section.id, '');
+    }
+  });
+
+  // ── Step 2: Only show entries that aren't in NO_NUMBER_TYPES ──
+  const tocEntries = sections.filter((s) => !NO_NUMBER_TYPES.has(s.type));
+
+  const getSubsections = (html: string): string[] => {
     if (typeof window === 'undefined') {
       const h2Match = html.match(/<h2[^>]*>(.*?)<\/h2>/gi);
       if (!h2Match) return [];
-      return h2Match.map(match => {
-        return match.replace(/<[^>]+>/g, '').trim();
-      });
+      return h2Match.map(match => match.replace(/<[^>]+>/g, '').trim());
     }
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    return Array.from(doc.querySelectorAll('h2')).map(el => el.textContent?.trim() || '').filter(Boolean);
+    return Array.from(doc.querySelectorAll('h2'))
+      .map(el => el.textContent?.trim() || '')
+      .filter(Boolean);
   };
 
-  const chapterTypes = ['chapter', 'results', 'advantages-disadvantages', 'conclusion'];
   let chapterCount = 0;
-  let romanPageCounter = 2; // Starts from ii or iii for first abstract/ack
-  let arabicPageCounter = 1;
 
   return (
     <div className="flex flex-col h-full" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-      <h2 className="text-center font-bold text-[16pt] mb-12">
-        CONTENTS
-      </h2>
-      
+      <h2 className="text-center font-bold text-[16pt] mb-12">CONTENTS</h2>
+
       <div className="flex justify-between font-bold text-[13pt] mb-6">
         <span>Contents</span>
         <span>Page No.</span>
       </div>
 
       <div className="flex flex-col space-y-4 text-[12pt]">
-        {tocEntries.map((section, index) => {
-          const isChapter = chapterTypes.includes(section.type);
+        {tocEntries.map((section) => {
+          const isChapterSection = section.type === 'chapter';
           let title = section.title.toUpperCase();
-          
-          if (isChapter) {
+
+          if (isChapterSection) {
             chapterCount++;
             if (!title.startsWith('CHAPTER')) {
               title = `CHAPTER ${chapterCount} - ${title}`;
             }
           }
 
-          const subsections = isChapter ? getSubsections(section.content) : [];
-          
-          // Dummy page numbers for visual representation in preview
-          let pageNoLabel = '';
-          if (isChapter) {
-            if (subsections.length > 0) {
-              // Hide page no for main chapter if it has subsections (like the image)
-              pageNoLabel = '';
-            } else {
-              pageNoLabel = (arabicPageCounter).toString();
-              arabicPageCounter += 2; // Jump by some pages
-            }
-          } else {
-            romanPageCounter++;
-            pageNoLabel = toRoman(romanPageCounter);
-          }
+          const subsections = isChapterSection ? getSubsections(section.content) : [];
+          const pageNoLabel = pageMap.get(section.id) ?? '';
 
           return (
             <div key={section.id} className="flex flex-col">
               <div className="flex justify-between mb-1">
                 <span>{title}</span>
-                <span>{pageNoLabel}</span>
+                <span>{subsections.length > 0 ? '' : pageNoLabel}</span>
               </div>
-              
+
               {subsections.length > 0 && (
                 <div className="flex flex-col space-y-3 mt-2 mb-2">
                   {subsections.map((sub, idx) => {
-                    // Start numbering from 1.1, 1.2, 1.3... if not already numbered
                     let subText = sub;
                     if (!/^\d+\.\d+/.test(subText)) {
                       subText = `${chapterCount}.${idx + 1} ${subText}`;
                     }
-                    const subPageNo = arabicPageCounter.toString();
-                    arabicPageCounter += Math.floor(Math.random() * 2) + 1; // Fake increment
-                    
+                    // Only show the chapter's page number on the first subsection
+                    const subPageNo = idx === 0 ? pageNoLabel : '';
                     return (
                       <div key={idx} className="flex justify-between ml-12">
                         <span>{subText}</span>
@@ -103,6 +111,7 @@ export default function TableOfContentsPreview() {
             </div>
           );
         })}
+
         {tocEntries.length === 0 && (
           <div className="text-center text-gray-400 italic mt-8">
             Add sections to populate the table of contents

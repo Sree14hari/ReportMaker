@@ -3,6 +3,7 @@
 export type SectionType =
   | 'title-page'
   | 'certificate'
+  | 'declaration'
   | 'acknowledgement'
   | 'abstract'
   | 'table-of-contents'
@@ -39,6 +40,8 @@ export interface ReportMeta {
   hodName: string;
   hodDesignation: string;
   principalName: string;
+  projectCoordinatorName?: string;
+  projectCoordinatorDesignation?: string;
   logoUrl: string;
 }
 
