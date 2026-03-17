@@ -60,6 +60,36 @@ export default function TitlePageEditor() {
             </div>
           </section>
 
+          {/* Title Page Spacing — AI & ML only */}
+          {meta.departmentShort === 'AI & ML' && (
+            <section>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 bg-slate-50 p-2 rounded">
+                Title Page Layout
+              </h3>
+              <div className="px-2 space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">Section Spacing</label>
+                  <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                    {meta.titlePageGap ?? 24}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={80}
+                  step={2}
+                  value={meta.titlePageGap ?? 24}
+                  onChange={(e) => setMeta({ titlePageGap: Number(e.target.value) })}
+                  className="w-full accent-blue-600"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>Compact</span>
+                  <span>Spacious</span>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Students */}
           <section>
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 bg-slate-50 p-2 rounded">Students</h3>

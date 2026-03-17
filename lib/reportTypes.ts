@@ -35,6 +35,7 @@ export interface ReportMeta {
   departmentShort: string;
   month: string;
   year: string;
+  titlePageGap?: number;
   guideName: string;
   guideDesignation: string;
   hodName: string;
