@@ -1,21 +1,96 @@
 // lib/pdfUtils.ts
 
 export async function downloadAsPDF(elementId: string, filename: string) {
-  // Update document title for the print modal to pick up the default PDF filename
-  const originalTitle = document.title;
-  
-  // Strip .pdf suffix if it exists so the browser doesn't double it
-  const titleForPrint = filename.endsWith('.pdf') ? filename.slice(0, -4) : filename;
-  document.title = titleForPrint;
+  const sourceEl = document.getElementById(elementId);
+  if (!sourceEl) {
+    console.error(`Element #${elementId} not found`);
+    return;
+  }
 
-  // Let the browser paint any pending layout changes
-  await new Promise(resolve => setTimeout(resolve, 300));
+  // Create a hidden iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;border:none;visibility:hidden;';
+  document.body.appendChild(iframe);
 
-  window.print();
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) return;
 
-  // Restore the original title
-  document.title = originalTitle;
+  // Collect all stylesheets from the current page
+  const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    .map((el) => el.outerHTML)
+    .join('\n');
+
+  const styleBlocks = Array.from(document.querySelectorAll('style'))
+    .map((el) => `<style>${el.innerHTML}</style>`)
+    .join('\n');
+
+  // Clone the report element and reset any CSS transform (scale)
+  const clone = sourceEl.cloneNode(true) as HTMLElement;
+  clone.style.transform = 'none';
+  clone.style.transformOrigin = 'top left';
+
+  iframeDoc.open();
+  iframeDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${filename}</title>
+  ${styleLinks}
+  ${styleBlocks}
+  <style>
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { margin: 0; padding: 0; background: white; }
+    body > div {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .page-break-wrapper {
+      page-break-after: always;
+      break-after: page;
+      width: 794px !important;
+      min-height: 1123px !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    @media print {
+      html, body { width: 794px; }
+      .page-break-wrapper { page-break-after: always; break-after: page; }
+    }
+  </style>
+</head>
+<body>
+  ${clone.outerHTML}
+</body>
+</html>`);
+  iframeDoc.close();
+
+  // Wait for content (fonts/images) to load
+  await new Promise<void>((resolve) => {
+    iframe.onload = () => resolve();
+    // fallback if onload already fired
+    setTimeout(resolve, 800);
+  });
+
+  // Set title so browser PDF dialog has correct filename
+  if (iframe.contentWindow) {
+    iframe.contentWindow.document.title = filename.endsWith('.pdf')
+      ? filename.slice(0, -4)
+      : filename;
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }
+
+  // Clean up after print dialog closes
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 2000);
 }
+
 
 export async function downloadAsDOCX(elementId: string, filename: string) {
   const element = document.getElementById(elementId);
