@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "The Reporter",
@@ -22,7 +23,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased" suppressHydrationWarning>{children}</body>
+      <body className="antialiased" suppressHydrationWarning>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
