@@ -5,6 +5,7 @@ import PDFDownloadButton from '@/components/PDFDownloadButton';
 import TemplateDropdown from '@/components/TemplateDropdown';
 import SectionDropdown from '@/components/editor/SectionDropdown';
 import { useRef, useState, useCallback } from 'react';
+import { Info, X, ExternalLink } from 'lucide-react';
 
 // SSR-disabled components
 const SectionList = dynamic(() => import('@/components/editor/SectionList'), { ssr: false });
@@ -13,6 +14,7 @@ const ReportPreview = dynamic(() => import('@/components/preview/ReportPreview')
 
 export default function Home() {
   const [previewWidth, setPreviewWidth] = useState(500);
+  const [showInfo, setShowInfo] = useState(false);
   const isDragging = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -56,9 +58,69 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <TemplateDropdown />
+          <button
+            onClick={() => setShowInfo(true)}
+            title="Tips & Info"
+            className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-100"
+          >
+            <Info size={18} />
+          </button>
           <PDFDownloadButton />
         </div>
       </header>
+
+      {/* ── Info Modal ── */}
+      {showInfo && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-[480px] max-w-[95vw] p-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setShowInfo(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Icon + Title */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                <Info size={20} />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">Tips for Best Results</h2>
+            </div>
+
+            {/* Message */}
+            <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+              <p>
+                ⚠️ <strong className="text-slate-800">Minor spacing or formatting issues</strong> may occasionally appear in the exported PDF — this is normal due to browser rendering differences.
+              </p>
+              <p>
+                ✅ For a perfectly polished document, follow these steps:
+              </p>
+              <ol className="list-decimal list-inside space-y-2 pl-2">
+                <li>Export the PDF using the <strong>Export PDF</strong> button.</li>
+                <li>Go to <strong>iLovePDF</strong> and convert it to a Word (.docx) file.</li>
+                <li>Open the Word file and make any final tweaks — spacing, fonts, margin fixes.</li>
+                <li>Re-export as PDF if needed.</li>
+              </ol>
+            </div>
+
+            {/* CTA */}
+            <a
+              href="https://www.ilovepdf.com/pdf_to_word"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+            >
+              <ExternalLink size={15} />
+              Open iLovePDF — PDF to Word
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* ── 3-Panel Body ── */}
       <div ref={bodyRef} className="flex flex-1 overflow-hidden">

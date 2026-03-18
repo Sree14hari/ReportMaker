@@ -125,6 +125,14 @@ export default function TitlePagePreview() {
       {/* 3. University & Degree */}
       <div className="flex flex-col items-center gap-2">
         <p className="text-[12pt]">To</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/ktulogo.png"
+          alt="KTU Logo"
+          className="mx-auto object-contain"
+          style={{ height: '70px', width: 'auto' }}
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        />
         <p className="italic text-[12pt] leading-snug">
           {meta.universityName || 'The APJ Abdul Kalam Technological University'}
         </p>
