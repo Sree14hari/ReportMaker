@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic';
 import PDFDownloadButton from '@/components/PDFDownloadButton';
 import TemplateDropdown from '@/components/TemplateDropdown';
+import ProjectSyncMenu from '@/components/ProjectSyncMenu';
 import SectionDropdown from '@/components/editor/SectionDropdown';
-import { useRef, useState, useCallback } from 'react';
-import { Info, X, ExternalLink } from 'lucide-react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { Info, X, ExternalLink, Instagram, Linkedin, DollarSign } from 'lucide-react';
 
 // SSR-disabled components
 const SectionList = dynamic(() => import('@/components/editor/SectionList'), { ssr: false });
@@ -15,8 +16,16 @@ const ReportPreview = dynamic(() => import('@/components/preview/ReportPreview')
 export default function Home() {
   const [previewWidth, setPreviewWidth] = useState(500);
   const [showInfo, setShowInfo] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const isDragging = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Hide splash screen after 1.8 seconds
+    const timer = setTimeout(() => setShowSplash(false), 1800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const onMouseDown = useCallback(() => {
     isDragging.current = true;
@@ -42,8 +51,23 @@ export default function Home() {
     window.addEventListener('mouseup', onMouseUp);
   }, []);
 
+  if (showSplash) {
+    return (
+      <div className="flex flex-col h-screen w-full items-center justify-center bg-white selection:bg-none">
+        <div className="flex flex-col items-center animate-pulse">
+          <h1 className="text-5xl sm:text-7xl font-light tracking-widest text-slate-800" style={{ fontFamily: "Georgia, serif" }}>
+            SHR
+          </h1>
+          <p className="mt-3 text-sm sm:text-base font-medium tracking-[0.4em] text-slate-400 uppercase">
+            Creations
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-slate-100 overflow-hidden animate-in fade-in duration-500">
       {/* ── Header ── */}
       <header id="main-header" className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-50 relative flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -53,10 +77,28 @@ export default function Home() {
           </div>
           <div>
             <h1 className="text-base font-bold text-gray-900 leading-tight">The Reporter</h1>
-            <p className="text-[10px] text-gray-400">made with love by SHR</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-gray-400">made with love by SHR</p>
+              <div className="flex items-center gap-1.5 ml-1 border-l border-gray-200 pl-2">
+                <a href="https://www.instagram.com/s_ree.har_i" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors" title="Instagram">
+                  <Instagram size={12} strokeWidth={2.5} />
+                </a>
+                <a href="https://www.linkedin.com/in/sree14hari/" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-blue-500 transition-colors" title="LinkedIn">
+                  <Linkedin size={12} strokeWidth={2.5} />
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowSupport(true)}
+            title="Support this project"
+            className="p-2 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors border border-transparent hover:border-emerald-100 flex items-center justify-center"
+          >
+            <DollarSign size={18} strokeWidth={2.5} />
+          </button>
+          <ProjectSyncMenu />
           <TemplateDropdown />
           <button
             onClick={() => setShowInfo(true)}
@@ -68,6 +110,31 @@ export default function Home() {
           <PDFDownloadButton />
         </div>
       </header>
+
+      {/* ── Support Modal ── */}
+      {showSupport && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowSupport(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 relative max-w-sm w-full mx-4 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowSupport(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-slate-800 mb-4 text-center">Support This Project</h2>
+            <div className="w-full aspect-square relative rounded-xl overflow-hidden bg-slate-100 mb-4 border border-slate-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/photo_2026-03-22_11-28-49.jpg" alt="Support QR Code" className="w-full h-full object-contain" />
+            </div>
+            <p className="text-sm font-medium text-slate-600 text-center px-4 leading-relaxed">
+              If you found this tool helpful, consider supporting its development! Every contribution helps me keep the servers running. ❤️
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Info Modal ── */}
       {showInfo && (

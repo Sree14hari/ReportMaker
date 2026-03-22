@@ -58,4 +58,5 @@ export interface ReportStore {
   updateSection: (id: string, updates: Partial<ReportSection>) => void;
   reorderSections: (from: number, to: number) => void;
   setActiveSection: (id: string) => void;
+  loadProject: (project: Pick<ReportStore, 'meta' | 'sections'>) => void;
 }

@@ -159,6 +159,13 @@ export const useReportStore = create<ReportStore>()(
         }),
 
       setActiveSection: (id) => set({ activeSectionId: id }),
+
+      loadProject: (project) =>
+        set({
+          meta: project.meta,
+          sections: project.sections,
+          activeSectionId: project.sections[0]?.id || null,
+        }),
     }),
     { 
       name: 'report-store',
