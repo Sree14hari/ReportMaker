@@ -1,6 +1,8 @@
 'use client';
 // components/preview/sections/TableOfContentsPreview.tsx
 import { useReportStore } from '@/lib/store';
+import { paginateHtml } from '@/lib/pagination';
+import { resolvePlaceholders } from '@/components/preview/sections/ChapterPreview';
 
 const toRoman = (num: number) => {
   const roman = ["", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii"];
@@ -20,6 +22,8 @@ const CHAPTER_TYPES = new Set(['chapter', 'results', 'references']);
 export default function TableOfContentsPreview() {
   const sections = useReportStore((s) => s.sections);
 
+  const meta = useReportStore((s) => s.meta);
+
   // ── Step 1: Walk all sections, assign page numbers exactly like ReportPreview ──
   let arabicCounter = 1;
   let romanCounter = 1;
@@ -29,15 +33,29 @@ export default function TableOfContentsPreview() {
     const isPreChapter = PRE_CHAPTER_TYPES.has(section.type);
     const showArabic = !isPreChapter;
     const showRoman  = isPreChapter && !NO_NUMBER_TYPES.has(section.type);
-
+    
+    // We must record the STARTING page number for this section in the TOC
     if (showArabic) {
       pageMap.set(section.id, arabicCounter.toString());
-      arabicCounter++;
     } else if (showRoman) {
       pageMap.set(section.id, toRoman(romanCounter));
-      romanCounter++;
     } else {
       pageMap.set(section.id, '');
+    }
+
+    // Now calculate how many pages (chunks) this section actually takes
+    const isPaginatable = !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
+    let chunks = 1;
+    if (isPaginatable && section.content && typeof window !== 'undefined') {
+      const resolved = resolvePlaceholders(section.content, meta as any);
+      chunks = paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850).length;
+    }
+
+    // Increment counters by the number of actual pages
+    if (showArabic) {
+      arabicCounter += chunks;
+    } else if (showRoman) {
+      romanCounter += chunks;
     }
   });
 
