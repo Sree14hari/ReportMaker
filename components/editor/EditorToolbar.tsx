@@ -76,12 +76,15 @@ export default function EditorToolbar({ editor, onInsertTable, alwaysEnableTable
         const result = event.target?.result;
         if (typeof result === 'string') {
           const figureLabel = window.prompt("Enter Figure Label (e.g., Fig 3.2: Circuit Diagram):");
-          // @ts-ignore
-          editor.chain().focus().setImage({ src: result }).run();
-          
+          // Insert the image wrapped in a centered paragraph
           if (figureLabel) {
-            // @ts-ignore
-            editor.chain().focus().insertContentAt(editor.state.selection.to, `<p style="text-align: center;">${figureLabel}</p>`).run();
+            editor.chain().focus()
+              .insertContent(`<p style="text-align: center;"><img src="${result}" /></p><p style="text-align: center;">${figureLabel}</p>`)
+              .run();
+          } else {
+            editor.chain().focus()
+              .insertContent(`<p style="text-align: center;"><img src="${result}" /></p>`)
+              .run();
           }
         }
       };

@@ -31,13 +31,13 @@ export default function SectionEditor() {
     extensions: [
       StarterKit,
       Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'paragraph', 'image'] }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCell,
       // @ts-ignore
-      ImageResize.configure({ allowBase64: true }),
+      ImageResize.configure({ allowBase64: true, inline: true }),
       Placeholder.configure({ placeholder: 'Start writing your section content here...' }),
     ],
     content: activeSection?.content ?? '',
