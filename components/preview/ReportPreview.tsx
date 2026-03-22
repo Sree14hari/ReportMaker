@@ -21,9 +21,10 @@ type PageData = {
   arabicPageNumber: number | null;
   romanPageNumber: number | null;
   hideTitle?: boolean;
+  tocProps?: { startIndex: number; endIndex: number };
 };
 
-function SectionRenderer({ section, chapterIndex, contentHtml, hideTitle }: { section: ReportSection; chapterIndex?: number | null; contentHtml?: string; hideTitle?: boolean }) {
+function SectionRenderer({ section, chapterIndex, contentHtml, hideTitle, tocProps }: { section: ReportSection; chapterIndex?: number | null; contentHtml?: string; hideTitle?: boolean; tocProps?: { startIndex: number; endIndex: number } }) {
   switch (section.type) {
     case 'title-page':
       return <TitlePagePreview />;
@@ -32,7 +33,7 @@ function SectionRenderer({ section, chapterIndex, contentHtml, hideTitle }: { se
     case 'declaration':
       return <DeclarationPreview section={section} contentHtml={contentHtml} />;
     case 'table-of-contents':
-      return <TableOfContentsPreview />;
+      return <TableOfContentsPreview tocProps={tocProps} />;
     default:
       return <ChapterPreview section={section} chapterIndex={chapterIndex} contentHtml={contentHtml} hideTitle={hideTitle} />;
   }
@@ -75,65 +76,97 @@ export default function ReportPreview() {
   }, []);
 
   useEffect(() => {
-    let arabicCounter = 1;
-    let romanCounter = 1;
-    let currentChapterIndex = 0;
+    const buildPages = async () => {
+      let arabicCounter = 1;
+      let romanCounter = 1;
+      let currentChapterIndex = 0;
 
-    const preChapterTypes = [
-      'title-page', 'certificate', 'declaration', 'acknowledgement',
-      'abstract', 'table-of-contents', 'list-of-figures', 'list-of-tables'
-    ];
+      const preChapterTypes = [
+        'title-page', 'certificate', 'declaration', 'acknowledgement',
+        'abstract', 'table-of-contents', 'list-of-figures', 'list-of-tables'
+      ];
 
-    const newPages: PageData[] = [];
+      const newPages: PageData[] = [];
 
-    sections.forEach((section) => {
-      const isPreChapter = preChapterTypes.includes(section.type);
-      const isActualChapterText = section.type === 'chapter';
-      if (isActualChapterText) {
-        currentChapterIndex += 1;
-      }
+      for (const section of sections) {
+        const isPreChapter = preChapterTypes.includes(section.type);
+        const isActualChapterText = section.type === 'chapter';
+        if (isActualChapterText) {
+          currentChapterIndex += 1;
+        }
 
-      const showArabic = !isPreChapter;
-      const showRoman = isPreChapter && !['title-page', 'certificate', 'declaration', 'table-of-contents'].includes(section.type);
+        const showArabic = !isPreChapter;
+        const showRoman = isPreChapter && !['title-page', 'certificate', 'declaration', 'table-of-contents'].includes(section.type);
 
-      const chapterIndex = showArabic && section.type !== 'references' && isActualChapterText ? currentChapterIndex : null;
+        const chapterIndex = showArabic && section.type !== 'references' && isActualChapterText ? currentChapterIndex : null;
 
-      const isPaginatable = !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
+        const isPaginatable = !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
 
-      if (isPaginatable && section.content) {
-        const resolved = resolvePlaceholders(section.content, meta as any);
-        const chunks = paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
+        if (isPaginatable && section.content) {
+          const resolved = resolvePlaceholders(section.content, meta as any);
+          const chunks = await paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
 
-        chunks.forEach((chunk, idx) => {
-          // If first chunk, it gets the chapter index (to show title)
-          // If not first chunk, chapter index is null to hide title repetition
+          chunks.forEach((chunk, idx) => {
+            newPages.push({
+              id: `${section.id}-${idx}`,
+              section,
+              htmlChunk: chunk,
+              chapterIndex: idx === 0 ? chapterIndex : null,
+              showArabicPageNumber: showArabic,
+              showRomanPageNumber: showRoman,
+              arabicPageNumber: showArabic ? arabicCounter++ : null,
+              romanPageNumber: showRoman ? romanCounter++ : null,
+              hideTitle: idx > 0,
+            });
+          });
+        } else if (section.type === 'table-of-contents') {
+          // Manually paginate table of contents
+          let totalLines = 0;
+          sections.filter((s) => !['title-page', 'certificate', 'declaration', 'table-of-contents'].includes(s.type)).forEach((s) => {
+            totalLines++; // title line
+            if (s.type === 'chapter' && s.content) {
+              const h2Match = s.content.match(/<h2[^>]*>(.*?)<\/h2>/gi);
+              if (h2Match) {
+                const validH2Count = h2Match.filter(m => m.replace(/<[^>]+>/g, '').trim().length > 0).length;
+                totalLines += validH2Count;
+              }
+            }
+          });
+
+          const LINES_PER_PAGE = 20;
+          const numTocPages = Math.max(1, Math.ceil(totalLines / LINES_PER_PAGE));
+
+          for (let p = 0; p < numTocPages; p++) {
+            newPages.push({
+              id: `${section.id}-${p}`,
+              section,
+              htmlChunk: null,
+              chapterIndex: null,
+              showArabicPageNumber: showArabic,
+              showRomanPageNumber: showRoman,
+              arabicPageNumber: showArabic ? arabicCounter++ : null,
+              romanPageNumber: showRoman ? romanCounter++ : null,
+              tocProps: { startIndex: p * LINES_PER_PAGE, endIndex: (p + 1) * LINES_PER_PAGE }
+            });
+          }
+        } else {
           newPages.push({
-            id: `${section.id}-${idx}`,
+            id: `${section.id}-0`,
             section,
-            htmlChunk: chunk,
-            chapterIndex: idx === 0 ? chapterIndex : null,
+            htmlChunk: null,
+            chapterIndex: chapterIndex,
             showArabicPageNumber: showArabic,
             showRomanPageNumber: showRoman,
             arabicPageNumber: showArabic ? arabicCounter++ : null,
             romanPageNumber: showRoman ? romanCounter++ : null,
-            hideTitle: idx > 0,
           });
-        });
-      } else {
-        newPages.push({
-          id: `${section.id}-0`,
-          section,
-          htmlChunk: null,
-          chapterIndex: chapterIndex,
-          showArabicPageNumber: showArabic,
-          showRomanPageNumber: showRoman,
-          arabicPageNumber: showArabic ? arabicCounter++ : null,
-          romanPageNumber: showRoman ? romanCounter++ : null,
-        });
+        }
       }
-    });
 
-    setPages(newPages);
+      setPages(newPages);
+    };
+
+    buildPages();
   }, [sections, meta]);
 
 
@@ -262,7 +295,7 @@ export default function ReportPreview() {
                     <tbody style={{ display: 'table-row-group' }}>
                       <tr style={{ height: '100%' }}>
                         <td style={{ padding: '0 96px 0 113px', verticalAlign: 'top' }}>
-                          <SectionRenderer section={section} chapterIndex={chapterIndex} contentHtml={htmlChunk || undefined} hideTitle={page.hideTitle} />
+                          <SectionRenderer section={section} chapterIndex={chapterIndex} contentHtml={htmlChunk || undefined} hideTitle={page.hideTitle} tocProps={page.tocProps} />
                         </td>
                       </tr>
                     </tbody>

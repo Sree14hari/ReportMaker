@@ -3,6 +3,7 @@
 import { useReportStore } from '@/lib/store';
 import { paginateHtml } from '@/lib/pagination';
 import { resolvePlaceholders } from '@/components/preview/sections/ChapterPreview';
+import { useState, useEffect } from 'react';
 
 const toRoman = (num: number) => {
   const roman = ["", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii"];
@@ -19,45 +20,54 @@ const PRE_CHAPTER_TYPES = new Set([
 // Types that get arabic page numbers
 const CHAPTER_TYPES = new Set(['chapter', 'results', 'references']);
 
-export default function TableOfContentsPreview() {
+export default function TableOfContentsPreview({ tocProps }: { tocProps?: { startIndex: number; endIndex: number } }) {
   const sections = useReportStore((s) => s.sections);
 
   const meta = useReportStore((s) => s.meta);
+  const [pageMap, setPageMap] = useState<Map<string, string>>(new Map());
 
   // ── Step 1: Walk all sections, assign page numbers exactly like ReportPreview ──
-  let arabicCounter = 1;
-  let romanCounter = 1;
-  const pageMap = new Map<string, string>(); // sectionId → page label string
+  useEffect(() => {
+    const buildTocPages = async () => {
+      let arabicCounter = 1;
+      let romanCounter = 1;
+      const newMap = new Map<string, string>(); // sectionId → page label string
 
-  sections.forEach((section) => {
-    const isPreChapter = PRE_CHAPTER_TYPES.has(section.type);
-    const showArabic = !isPreChapter;
-    const showRoman  = isPreChapter && !NO_NUMBER_TYPES.has(section.type);
-    
-    // We must record the STARTING page number for this section in the TOC
-    if (showArabic) {
-      pageMap.set(section.id, arabicCounter.toString());
-    } else if (showRoman) {
-      pageMap.set(section.id, toRoman(romanCounter));
-    } else {
-      pageMap.set(section.id, '');
-    }
+      for (const section of sections) {
+        const isPreChapter = PRE_CHAPTER_TYPES.has(section.type);
+        const showArabic = !isPreChapter;
+        const showRoman  = isPreChapter && !NO_NUMBER_TYPES.has(section.type);
+        
+        // We must record the STARTING page number for this section in the TOC
+        if (showArabic) {
+          newMap.set(section.id, arabicCounter.toString());
+        } else if (showRoman) {
+          newMap.set(section.id, toRoman(romanCounter));
+        } else {
+          newMap.set(section.id, '');
+        }
 
-    // Now calculate how many pages (chunks) this section actually takes
-    const isPaginatable = !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
-    let chunks = 1;
-    if (isPaginatable && section.content && typeof window !== 'undefined') {
-      const resolved = resolvePlaceholders(section.content, meta as any);
-      chunks = paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850).length;
-    }
+        // Now calculate how many pages (chunks) this section actually takes
+        const isPaginatable = !['title-page', 'certificate', 'table-of-contents'].includes(section.type);
+        let chunks = 1;
+        if (isPaginatable && section.content && typeof window !== 'undefined') {
+          const resolved = resolvePlaceholders(section.content, meta as any);
+          const computedChunks = await paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
+          chunks = computedChunks.length;
+        }
 
-    // Increment counters by the number of actual pages
-    if (showArabic) {
-      arabicCounter += chunks;
-    } else if (showRoman) {
-      romanCounter += chunks;
-    }
-  });
+        // Increment counters by the number of actual pages
+        if (showArabic) {
+          arabicCounter += chunks;
+        } else if (showRoman) {
+          romanCounter += chunks;
+        }
+      }
+      setPageMap(newMap);
+    };
+
+    buildTocPages();
+  }, [sections, meta]);
 
   // ── Step 2: Only show entries that aren't in NO_NUMBER_TYPES ──
   const tocEntries = sections.filter((s) => !NO_NUMBER_TYPES.has(s.type));
@@ -76,59 +86,64 @@ export default function TableOfContentsPreview() {
   };
 
   let chapterCount = 0;
+  const flatLines: React.ReactNode[] = [];
+
+  tocEntries.forEach((section) => {
+    const isChapterSection = section.type === 'chapter';
+    let title = section.title.toUpperCase();
+
+    if (isChapterSection) {
+      chapterCount++;
+      if (!title.startsWith('CHAPTER')) {
+        title = `CHAPTER ${chapterCount} - ${title}`;
+      }
+    }
+
+    const subsections = isChapterSection ? getSubsections(section.content) : [];
+    const pageNoLabel = pageMap.get(section.id) ?? '';
+
+    flatLines.push(
+      <div key={`${section.id}-title`} className="flex justify-between mb-1 mt-3">
+        <span>{title}</span>
+        <span>{subsections.length > 0 ? '' : pageNoLabel}</span>
+      </div>
+    );
+
+    subsections.forEach((sub, idx) => {
+      let subText = sub;
+      if (!/^\d+\.\d+/.test(subText)) {
+        subText = `${chapterCount}.${idx + 1} ${subText}`;
+      }
+      const subPageNo = idx === 0 ? pageNoLabel : '';
+      flatLines.push(
+        <div key={`${section.id}-sub-${idx}`} className="flex justify-between ml-12 mb-1.5 mt-1.5">
+          <span>{subText}</span>
+          <span>{subPageNo}</span>
+        </div>
+      );
+    });
+  });
+
+  const displayLines = tocProps ? flatLines.slice(tocProps.startIndex, tocProps.endIndex) : flatLines;
 
   return (
     <div className="flex flex-col h-full" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-      <h2 className="text-center font-bold text-[16pt] mb-12">CONTENTS</h2>
+      {(!tocProps || tocProps.startIndex === 0) && (
+        <>
+          <h2 className="text-center font-bold text-[16pt] mb-12">CONTENTS</h2>
+          <div className="flex justify-between font-bold text-[13pt] mb-6">
+            <span>Contents</span>
+            <span>Page No.</span>
+          </div>
+        </>
+      )}
 
-      <div className="flex justify-between font-bold text-[13pt] mb-6">
-        <span>Contents</span>
-        <span>Page No.</span>
-      </div>
+      {tocProps && tocProps.startIndex > 0 && (
+         <div className="h-[48px] w-full mb-12"></div>
+      )}
 
-      <div className="flex flex-col space-y-4 text-[12pt]">
-        {tocEntries.map((section) => {
-          const isChapterSection = section.type === 'chapter';
-          let title = section.title.toUpperCase();
-
-          if (isChapterSection) {
-            chapterCount++;
-            if (!title.startsWith('CHAPTER')) {
-              title = `CHAPTER ${chapterCount} - ${title}`;
-            }
-          }
-
-          const subsections = isChapterSection ? getSubsections(section.content) : [];
-          const pageNoLabel = pageMap.get(section.id) ?? '';
-
-          return (
-            <div key={section.id} className="flex flex-col">
-              <div className="flex justify-between mb-1">
-                <span>{title}</span>
-                <span>{subsections.length > 0 ? '' : pageNoLabel}</span>
-              </div>
-
-              {subsections.length > 0 && (
-                <div className="flex flex-col space-y-3 mt-2 mb-2">
-                  {subsections.map((sub, idx) => {
-                    let subText = sub;
-                    if (!/^\d+\.\d+/.test(subText)) {
-                      subText = `${chapterCount}.${idx + 1} ${subText}`;
-                    }
-                    // Only show the chapter's page number on the first subsection
-                    const subPageNo = idx === 0 ? pageNoLabel : '';
-                    return (
-                      <div key={idx} className="flex justify-between ml-12">
-                        <span>{subText}</span>
-                        <span>{subPageNo}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="flex flex-col text-[12pt]">
+        {displayLines}
 
         {tocEntries.length === 0 && (
           <div className="text-center text-gray-400 italic mt-8">

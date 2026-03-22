@@ -1,8 +1,8 @@
-export function paginateHtml(
+export async function paginateHtml(
   html: string,
   availableHeight: number,
   firstPageAvailableHeight: number
-): string[] {
+): Promise<string[]> {
   if (typeof window === 'undefined') return [html];
 
   const measureDiv = document.createElement('div');
@@ -18,6 +18,16 @@ export function paginateHtml(
   measureDiv.innerHTML = html;
 
   document.body.appendChild(measureDiv);
+
+  // Wait for all images inside measureDiv to load their dimensions
+  const images = Array.from(measureDiv.querySelectorAll('img'));
+  await Promise.all(images.map(img => {
+    if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve; // resolve anyway so we don't hang
+    });
+  }));
 
   const pages: string[] = [];
   let currentPageHtml = '';
