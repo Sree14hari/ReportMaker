@@ -226,10 +226,11 @@ export default function ReportPreview() {
               return (
                 <div
                   key={page.id}
-                  className="bg-white shadow-xl page-break-wrapper"
+                   className="bg-white shadow-xl page-break-wrapper"
                   style={{
                     width: A4_WIDTH_PX,
-                    minHeight: '1123px', // 297mm at 96dpi
+                    height: '1123px', // strictly 297mm at 96dpi
+                    overflow: 'hidden', // enforce strict A4 size
                     display: 'flex',
                     flexDirection: 'column',
                     fontFamily: "'Times New Roman', Times, serif",

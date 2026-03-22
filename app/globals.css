@@ -186,7 +186,8 @@ body {
 
 .report-content img {
   max-width: 100%;
-  height: auto;
+  max-height: 650px;
+  object-fit: contain;
   display: block;
   margin-left: auto !important;
   margin-right: auto !important;
