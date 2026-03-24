@@ -52,7 +52,7 @@ export default function TableOfContentsPreview({ tocProps }: { tocProps?: { star
         let chunks = 1;
         if (isPaginatable && section.content && typeof window !== 'undefined') {
           const resolved = resolvePlaceholders(section.content, meta as any);
-          const computedChunks = await paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
+          const computedChunks = await paginateHtml(resolved, 870, section.type === 'chapter' ? 740 : 870);
           chunks = computedChunks.length;
         }
 

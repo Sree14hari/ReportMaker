@@ -6,10 +6,11 @@ import CertificatePreview from './sections/CertificatePreview';
 import DeclarationPreview from './sections/DeclarationPreview';
 import TableOfContentsPreview from './sections/TableOfContentsPreview';
 import ChapterPreview, { resolvePlaceholders } from './sections/ChapterPreview';
+import CanvasEditor from './CanvasEditor';
 import { ReportSection } from '@/lib/reportTypes';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { paginateHtml } from '@/lib/pagination';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, PenLine } from 'lucide-react';
 
 type PageData = {
   id: string;
@@ -54,12 +55,27 @@ export default function ReportPreview() {
   const [fitScale, setFitScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const [pages, setPages] = useState<PageData[]>([]);
+  const [canvasEditMode, setCanvasEditMode] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
 
   const scale = fitScale * userZoom;
 
   const zoomIn  = useCallback(() => setUserZoom(z => Math.min(3, parseFloat((z + 0.1).toFixed(1)))), []);
   const zoomOut = useCallback(() => setUserZoom(z => Math.max(0.2, parseFloat((z - 0.1).toFixed(1)))), []);
   const zoomFit = useCallback(() => setUserZoom(1), []);
+
+  // Toggle canvas edit mode
+  const toggleCanvasEdit = useCallback(() => {
+    setCanvasEditMode(prev => {
+      if (prev) setEditingPageId(null); // close any open editor when turning off
+      return !prev;
+    });
+  }, []);
+
+  const handlePageClick = useCallback((pageId: string) => {
+    if (!canvasEditMode) return;
+    setEditingPageId(prev => prev === pageId ? null : pageId);
+  }, [canvasEditMode]);
 
   // Dynamically compute fitScale so A4 page fits the container width
   useEffect(() => {
@@ -104,7 +120,7 @@ export default function ReportPreview() {
 
         if (isPaginatable && section.content) {
           const resolved = resolvePlaceholders(section.content, meta as any);
-          const chunks = await paginateHtml(resolved, 850, section.type === 'chapter' ? 700 : 850);
+          const chunks = await paginateHtml(resolved, 870, section.type === 'chapter' ? 740 : 870);
 
           chunks.forEach((chunk, idx) => {
             newPages.push({
@@ -190,7 +206,7 @@ export default function ReportPreview() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Zoom toolbar */}
+      {/* Zoom + Canvas Edit toolbar */}
       <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-slate-800 border-b border-slate-700 flex-shrink-0">
         <button
           onClick={zoomOut}
@@ -216,6 +232,19 @@ export default function ReportPreview() {
           className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
         >
           <Maximize2 size={13} />
+        </button>
+        <div className="w-px h-4 bg-slate-600 mx-1" />
+        <button
+          onClick={toggleCanvasEdit}
+          title={canvasEditMode ? 'Exit Canvas Edit Mode' : 'Edit directly on the canvas'}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+            canvasEditMode
+              ? 'bg-blue-500 text-white shadow-[0_0_8px_rgba(59,130,246,0.6)]'
+              : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+          }`}
+        >
+          <PenLine size={13} />
+          {canvasEditMode ? 'Editing' : 'Canvas Edit'}
         </button>
       </div>
 
@@ -255,76 +284,90 @@ export default function ReportPreview() {
           >
             {pages.map((page, index) => {
               const { section, chapterIndex, showArabicPageNumber, showRomanPageNumber, arabicPageNumber, romanPageNumber, htmlChunk } = page;
+              const isBeingEdited = editingPageId === page.id;
 
               return (
                 <div
                   key={page.id}
-                   className="bg-white shadow-xl page-break-wrapper"
+                  className={`bg-white shadow-xl page-break-wrapper relative ${
+                    canvasEditMode && !isBeingEdited ? 'cursor-pointer canvas-edit-hover' : ''
+                  }`}
                   style={{
                     width: A4_WIDTH_PX,
-                    height: '1123px', // strictly 297mm at 96dpi
-                    overflow: 'hidden', // enforce strict A4 size
+                    height: '1123px',
+                    overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     fontFamily: "'Times New Roman', Times, serif",
-                    fontSize: '16px', // ≈12pt
+                    fontSize: '16px',
                     lineHeight: '1.5',
                     color: '#000',
                     boxSizing: 'border-box',
                     pageBreakAfter: 'always',
                   }}
+                  onClick={() => !isBeingEdited && handlePageClick(page.id)}
                 >
-                  <table className="w-full h-full flex-1" style={{ borderCollapse: 'collapse', borderSpacing: 0, margin: 0 }}>
-                    <thead style={{ display: 'table-header-group' }}>
-                      <tr>
-                        <td style={{ padding: '0 96px 0 113px' }}>
-                          <div style={{ height: '48px' }}></div>
-                          {showArabicPageNumber ? (
-                            <>
-                              <div className="flex justify-between items-end pb-1 border-b-[1.5px] border-black text-[12pt]">
-                                <span>{meta.headerContent || meta.title || 'PROJECT TITLE'}</span>
-                              </div>
-                              <div style={{ height: '24px' }}></div>
-                            </>
-                          ) : (
-                            <div style={{ height: '48px' }}></div>
-                          )}
-                        </td>
-                      </tr>
-                    </thead>
-                    <tbody style={{ display: 'table-row-group' }}>
-                      <tr style={{ height: '100%' }}>
-                        <td style={{ padding: '0 96px 0 113px', verticalAlign: 'top' }}>
-                          <SectionRenderer section={section} chapterIndex={chapterIndex} contentHtml={htmlChunk || undefined} hideTitle={page.hideTitle} tocProps={page.tocProps} />
-                        </td>
-                      </tr>
-                    </tbody>
-                    <tfoot style={{ display: 'table-footer-group' }}>
-                      <tr>
-                        <td style={{ padding: '0 96px 0 113px' }}>
-                          {showArabicPageNumber ? (
-                            <>
-                              <div style={{ height: '24px' }}></div>
-                              <div className="flex justify-between items-start pt-1 border-t-[1.5px] border-black text-[12pt]">
-                                <span>DEPARTMENT OF {meta.departmentShort || 'ECE'}</span>
-                                <span>{arabicPageNumber}</span>
-                              </div>
-                            </>
-                          ) : showRomanPageNumber ? (
-                            <>
-                              <div style={{ height: '24px' }}></div>
-                              <div className="flex justify-end text-[12pt]">
-                                {romanPageNumber ? toRoman(romanPageNumber) : ''}
-                              </div>
-                            </>
-                          ) : (
-                            <div style={{ height: '48px' }}></div>
-                          )}
-                          <div style={{ height: '48px' }}></div>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                  {/* ── FIXED HEADER ── */}
+                  <div style={{ flexShrink: 0, padding: '0 96px 0 113px' }}>
+                    <div style={{ height: '48px' }} />
+                    {showArabicPageNumber ? (
+                      <>
+                        <div className="flex justify-between items-end pb-1 border-b-[1.5px] border-black text-[12pt]">
+                          <span>{meta.headerContent || meta.title || 'PROJECT TITLE'}</span>
+                        </div>
+                        <div style={{ height: '24px' }} />
+                      </>
+                    ) : (
+                      <div style={{ height: '48px' }} />
+                    )}
+                  </div>
+
+                  {/* ── CONTENT (fills remaining space, does NOT push footer) ── */}
+                  <div style={{ flex: 1, overflow: 'hidden', padding: '0 96px 0 113px', position: 'relative' }}>
+                    <SectionRenderer section={section} chapterIndex={chapterIndex} contentHtml={htmlChunk || undefined} hideTitle={page.hideTitle} tocProps={page.tocProps} />
+
+                    {/* Canvas edit overlay */}
+                    {isBeingEdited && (
+                      <CanvasEditor
+                        section={section}
+                        chapterIndex={chapterIndex}
+                        onClose={() => setEditingPageId(null)}
+                      />
+                    )}
+
+                    {/* Canvas hover hint */}
+                    {canvasEditMode && !isBeingEdited && (
+                      <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <div className="bg-blue-600/90 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 backdrop-blur-sm">
+                          <PenLine size={12} />
+                          Click to edit
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── FIXED FOOTER ── */}
+                  <div style={{ flexShrink: 0, padding: '0 96px 0 113px' }}>
+                    {showArabicPageNumber ? (
+                      <>
+                        <div style={{ height: '24px' }} />
+                        <div className="flex justify-between items-start pt-1 border-t-[1.5px] border-black text-[12pt]">
+                          <span>DEPARTMENT OF {meta.departmentShort || 'ECE'}</span>
+                          <span>{arabicPageNumber}</span>
+                        </div>
+                      </>
+                    ) : showRomanPageNumber ? (
+                      <>
+                        <div style={{ height: '24px' }} />
+                        <div className="flex justify-end text-[12pt]">
+                          {romanPageNumber ? toRoman(romanPageNumber) : ''}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ height: '48px' }} />
+                    )}
+                    <div style={{ height: '48px' }} />
+                  </div>
                 </div>
               );
             })}

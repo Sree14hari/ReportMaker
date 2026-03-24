@@ -49,7 +49,8 @@ export async function downloadAsPDF(elementId: string, filename: string) {
       page-break-after: always;
       break-after: page;
       width: 794px !important;
-      min-height: 1123px !important;
+      height: 1123px !important;
+      overflow: hidden !important;
       box-shadow: none !important;
       margin: 0 !important;
     }

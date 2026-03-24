@@ -53,12 +53,62 @@ export default function Home() {
 
   if (showSplash) {
     return (
-      <div className="flex flex-col h-screen w-full items-center justify-center bg-white selection:bg-none">
-        <div className="flex flex-col items-center animate-pulse">
-          <h1 className="text-5xl sm:text-7xl font-light tracking-widest text-slate-800" style={{ fontFamily: "Georgia, serif" }}>
-            SHR
-          </h1>
-          <p className="mt-3 text-sm sm:text-base font-medium tracking-[0.4em] text-slate-400 uppercase">
+      <div className="flex flex-col h-screen w-full items-center justify-center bg-white selection:bg-none overflow-hidden">
+        <style>{`
+          @keyframes letter-rise {
+            0%   { opacity: 0; transform: translateY(24px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes line-sweep {
+            0%   { transform: scaleX(0); opacity: 0; }
+            30%  { opacity: 1; }
+            100% { transform: scaleX(1); opacity: 1; }
+          }
+          @keyframes sub-fade {
+            0%   { opacity: 0; letter-spacing: 0.2em; }
+            100% { opacity: 1; letter-spacing: 0.45em; }
+          }
+          @keyframes splash-out {
+            0%   { opacity: 1; }
+            100% { opacity: 0; }
+          }
+          .splash-wrap {
+            animation: splash-out 0.35s ease-in 1.5s forwards;
+          }
+          .shr-s { animation: letter-rise 0.5s cubic-bezier(.16,1,.3,1) 0.1s both; }
+          .shr-h { animation: letter-rise 0.5s cubic-bezier(.16,1,.3,1) 0.22s both; }
+          .shr-r { animation: letter-rise 0.5s cubic-bezier(.16,1,.3,1) 0.34s both; }
+          .shr-line { animation: line-sweep 0.6s cubic-bezier(.16,1,.3,1) 0.52s both; transform-origin: left; }
+          .shr-sub  { animation: sub-fade  0.6s ease 0.75s both; }
+        `}</style>
+
+        <div className="splash-wrap flex flex-col items-center gap-0">
+          {/* Main letters */}
+          <div
+            className="flex items-end gap-1 sm:gap-2"
+            style={{ fontFamily: 'Georgia, serif' }}
+          >
+            {['S','H','R'].map((letter) => (
+              <span
+                key={letter}
+                className={`text-6xl sm:text-8xl font-light text-slate-800 inline-block shr-${letter.toLowerCase()}`}
+                style={{ letterSpacing: '0.12em' }}
+              >
+                {letter}
+              </span>
+            ))}
+          </div>
+
+          {/* Sweeping underline */}
+          <div className="relative w-full mt-1 mb-3 h-px overflow-visible">
+            <div
+              className="shr-line absolute left-0 right-0 h-[1.5px] bg-gradient-to-r from-slate-300 via-slate-500 to-slate-300"
+            />
+          </div>
+
+          {/* Subtitle */}
+          <p className="shr-sub text-[11px] sm:text-sm font-semibold text-slate-400 uppercase"
+             style={{ letterSpacing: '0.45em' }}>
             Creations
           </p>
         </div>

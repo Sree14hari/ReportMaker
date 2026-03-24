@@ -193,6 +193,25 @@ body {
   margin-right: auto !important;
 }
 
+/* ===== Canvas Edit Mode ===== */
+.canvas-edit-hover:hover {
+  outline: 2.5px solid rgba(59, 130, 246, 0.5);
+  outline-offset: -2px;
+  transition: outline 0.15s ease;
+}
+
+/* Scrollbar for canvas editor */
+.canvas-editor-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.canvas-editor-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.canvas-editor-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
 /* ===== PDF Page Break ===== */
 .page-break {
   page-break-before: always;
