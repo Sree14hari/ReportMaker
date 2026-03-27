@@ -73,13 +73,12 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
     // Paragraph
     else if (tag === 'p') {
         const textRuns = await parseInlineContent(el);
-        if (textRuns.length > 0) {
-            elements.push(new Paragraph({
-                children: textRuns,
-                alignment,
-                spacing: { before: 120, after: 240, line: 360 } // proper paragraph spacing
-            }));
-        }
+        // Always push a paragraph (use empty text run if no children to avoid corrupt XML)
+        elements.push(new Paragraph({
+            children: textRuns.length > 0 ? textRuns : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
+            alignment,
+            spacing: { before: 120, after: 240, line: 360 }
+        }));
     }
     // Direct Image
     else if (tag === 'img') {
@@ -89,12 +88,16 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
                 const buffer = await fetchImageBuffer(src);
                 const w = (el as HTMLImageElement).width || 400;
                 const h = (el as HTMLImageElement).height || 300;
+                const imgType = src.startsWith('data:image/png') || src.toLowerCase().includes('.png') ? 'png'
+                              : src.startsWith('data:image/gif') || src.toLowerCase().includes('.gif') ? 'gif'
+                              : src.startsWith('data:image/bmp') || src.toLowerCase().includes('.bmp') ? 'bmp'
+                              : 'jpg';
                 elements.push(new Paragraph({
                     children: [
                         new ImageRun({
                             data: buffer,
                             transformation: { width: w, height: h },
-                            type: src.includes('png') ? 'png' : 'jpg'
+                            type: imgType
                         })
                     ],
                     alignment: AlignmentType.CENTER,
@@ -152,27 +155,31 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
 }
 
 // Inline format parser
-async function parseInlineContent(el: HTMLElement, format: { bold?: boolean; italics?: boolean; underline?: boolean } = {}): Promise<any[]> {
+async function parseInlineContent(
+    el: HTMLElement,
+    format: { bold?: boolean; italics?: boolean; underline?: boolean; superScript?: boolean; subScript?: boolean } = {}
+): Promise<any[]> {
     const runs: any[] = [];
     for (let i = 0; i < el.childNodes.length; i++) {
         const node = el.childNodes[i];
         if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent;
-            // Only keep non-empty or replace multiple spaces with one
             if (text && text.trim() !== '') {
                 runs.push(new TextRun({
                     text: text.replace(/\n/g, ' ').replace(/\s{2,}/g, ' '),
                     font: 'Times New Roman',
-                    size: 24, // 12pt
+                    size: format.superScript || format.subScript ? 18 : 24, // 9pt for super/sub, 12pt normal
                     bold: format.bold,
                     italics: format.italics,
-                    underline: format.underline ? {} : undefined
+                    underline: format.underline ? {} : undefined,
+                    superScript: format.superScript,
+                    subScript: format.subScript,
                 }));
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             const childEl = node as HTMLElement;
             const tag = childEl.tagName.toLowerCase();
-            
+
             if (tag === 'img') {
                 const src = childEl.getAttribute('src');
                 if (src) {
@@ -180,19 +187,27 @@ async function parseInlineContent(el: HTMLElement, format: { bold?: boolean; ita
                         const buffer = await fetchImageBuffer(src);
                         const w = (childEl as HTMLImageElement).width || 400;
                         const h = (childEl as HTMLImageElement).height || 300;
+                        const imgType = src.startsWith('data:image/png') || src.toLowerCase().includes('.png') ? 'png'
+                                       : src.startsWith('data:image/gif') || src.toLowerCase().includes('.gif') ? 'gif'
+                                       : src.startsWith('data:image/bmp') || src.toLowerCase().includes('.bmp') ? 'bmp'
+                                       : 'jpg';
                         runs.push(new ImageRun({
                             data: buffer,
                             transformation: { width: w, height: h },
-                            type: src.includes('png') ? 'png' : 'jpg'
+                            type: imgType
                         }));
                     } catch(e) { console.error('Image inline fetch error:', e); }
                 }
+            } else if (tag === 'br') {
+                runs.push(new TextRun({ text: '', break: 1, font: 'Times New Roman', size: 24 }));
             } else {
                 const childFormat = { ...format };
                 if (tag === 'strong' || tag === 'b') childFormat.bold = true;
                 if (tag === 'em' || tag === 'i') childFormat.italics = true;
                 if (tag === 'u') childFormat.underline = true;
-                
+                if (tag === 'sup') childFormat.superScript = true;
+                if (tag === 'sub') childFormat.subScript = true;
+
                 const childRuns = await parseInlineContent(childEl, childFormat);
                 runs.push(...childRuns);
             }
@@ -352,9 +367,8 @@ export async function generateProperDocx(store: ReportStore) {
                         }
                     }
                 },
-                headers: {}, 
-                footers: {}, // No footer/page number for first two pages
-                children: unNumberedDocs.length > 0 ? unNumberedDocs : [new Paragraph('')]
+                // No headers/footers on title/certificate pages
+                children: unNumberedDocs.length > 0 ? unNumberedDocs : [new Paragraph({ children: [new TextRun('')] })]
             },
             {
                 properties: {
@@ -368,9 +382,8 @@ export async function generateProperDocx(store: ReportStore) {
                         }
                     }
                 },
-                headers: {}, 
                 footers: { default: createSimpleFooter() },
-                children: romanDocs.length > 0 ? romanDocs : [new Paragraph('')]
+                children: romanDocs.length > 0 ? romanDocs : [new Paragraph({ children: [new TextRun('')] })]
             },
             {
                 properties: {
@@ -386,7 +399,7 @@ export async function generateProperDocx(store: ReportStore) {
                 },
                 headers: { default: createHeader() },
                 footers: { default: createFooter() },
-                children: chapterDocs.length > 0 ? chapterDocs : [new Paragraph('')]
+                children: chapterDocs.length > 0 ? chapterDocs : [new Paragraph({ children: [new TextRun('')] })]
             }
         ]
     });
