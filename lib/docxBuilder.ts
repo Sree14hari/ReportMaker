@@ -41,114 +41,202 @@ export async function fetchImageBuffer(url: string): Promise<ArrayBuffer> {
   return response.arrayBuffer();
 }
 
-// Convert DOM Node to docx elements
+// ── Image helpers ──
+// DOMParser does NOT render images, so el.width / el.height are always 0.
+// Parse dimensions from the style attribute or HTML attributes instead.
+function parseImageDimensions(el: HTMLElement): { w: number; h: number } {
+    const styleW = el.style?.width  ? parseInt(el.style.width,  10) : 0;
+    const styleH = el.style?.height ? parseInt(el.style.height, 10) : 0;
+    const attrW  = parseInt(el.getAttribute('width')  || '0', 10) || 0;
+    const attrH  = parseInt(el.getAttribute('height') || '0', 10) || 0;
+    const domW   = (el as any).naturalWidth  || (el as any).width  || 0;
+    const domH   = (el as any).naturalHeight || (el as any).height || 0;
+    let w = styleW || attrW || domW || 400;
+    let h = styleH || attrH || domH || 300;
+    // Cap to A4 printable width in points (~600pt)
+    if (w > 600) { h = Math.round(h * 600 / w); w = 600; }
+    if (w < 1) w = 400;
+    if (h < 1) h = 300;
+    return { w, h };
+}
+
+function getImgType(src: string): 'png' | 'jpg' | 'gif' | 'bmp' {
+    if (src.startsWith('data:image/png') || src.toLowerCase().includes('.png')) return 'png';
+    if (src.startsWith('data:image/gif') || src.toLowerCase().includes('.gif')) return 'gif';
+    if (src.startsWith('data:image/bmp') || src.toLowerCase().includes('.bmp')) return 'bmp';
+    return 'jpg';
+}
+
+// ── Recursive list parser (handles nesting) ──
+async function parseList(el: HTMLElement, isBullet: boolean, depth: number): Promise<any[]> {
+    const elems: any[] = [];
+    const lis = Array.from(el.children).filter(c => c.tagName.toLowerCase() === 'li');
+    for (const li of lis) {
+        const inlineNodes: ChildNode[] = [];
+        const nestedLists: HTMLElement[] = [];
+        for (let i = 0; i < li.childNodes.length; i++) {
+            const child = li.childNodes[i];
+            const t = child.nodeType === Node.ELEMENT_NODE ? (child as HTMLElement).tagName.toLowerCase() : '';
+            if (t === 'ul' || t === 'ol') nestedLists.push(child as HTMLElement);
+            else inlineNodes.push(child);
+        }
+        const tempEl = document.createElement('span');
+        inlineNodes.forEach(n => tempEl.appendChild(n.cloneNode(true)));
+        const runs = await parseInlineContent(tempEl);
+        elems.push(new Paragraph({
+            children: runs.length > 0 ? runs : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
+            bullet:    isBullet ? { level: Math.min(depth, 8) } : undefined,
+            numbering: !isBullet ? { reference: 'ol-num', level: Math.min(depth, 8) } : undefined,
+            indent: depth > 0 ? { left: 720 * depth } : undefined,
+            spacing: { after: 80 }, alignment: AlignmentType.JUSTIFIED,
+        }));
+        for (const nested of nestedLists) {
+            elems.push(...await parseList(nested, nested.tagName.toLowerCase() === 'ul', depth + 1));
+        }
+    }
+    return elems;
+}
+
+const INLINE_TAGS_SET = new Set(['span','strong','em','b','i','u','s','strike','code','mark','a','small','label','sup','sub','br','img']);
+
+// ── Main HTML → DOCX block-level parser ──
 async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null): Promise<any[]> {
   const elements: any[] = [];
-  
+
   if (node.nodeType === Node.TEXT_NODE) {
+    // Bare text at block level → wrap in a Paragraph
     const text = node.textContent?.trim();
     if (text) {
-      elements.push(new TextRun({ text: text + ' ', font: 'Times New Roman', size: 24 }));
+      elements.push(new Paragraph({
+          children: [new TextRun({ text, font: 'Times New Roman', size: 24 })],
+          spacing: { before: 120, after: 240, line: 360 }
+      }));
     }
   } else if (node.nodeType === Node.ELEMENT_NODE) {
     const el = node as HTMLElement;
     const tag = el.tagName.toLowerCase();
-    const alignStyle = el.style.textAlign;
-    
-    let alignment = AlignmentType.JUSTIFIED as any;
+    const alignStyle = el.style?.textAlign;
+
+    let alignment: any = AlignmentType.JUSTIFIED;
     if (alignStyle === 'center') alignment = AlignmentType.CENTER;
     else if (alignStyle === 'right') alignment = AlignmentType.RIGHT;
     else if (alignStyle === 'left') alignment = AlignmentType.LEFT;
 
-    // Headings
+    // ── Headings ──
     if (/^h[1-6]$/.test(tag)) {
+        const level = parseInt(tag[1], 10);
         const textRuns = await parseInlineContent(el);
         elements.push(new Paragraph({
-            children: textRuns,
-            heading: tag === 'h1' ? HeadingLevel.HEADING_1 : tag === 'h2' ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
+            children: textRuns.length > 0 ? textRuns : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
+            heading: level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
             alignment: AlignmentType.CENTER,
             spacing: { before: 240, after: 120 }
         }));
     }
-    // Paragraph
+    // ── Paragraph ──
     else if (tag === 'p') {
         const textRuns = await parseInlineContent(el);
-        // Always push a paragraph (use empty text run if no children to avoid corrupt XML)
         elements.push(new Paragraph({
             children: textRuns.length > 0 ? textRuns : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
             alignment,
             spacing: { before: 120, after: 240, line: 360 }
         }));
     }
-    // Direct Image
+    // ── Image (block) ──
     else if (tag === 'img') {
         const src = el.getAttribute('src');
         if (src) {
             try {
                 const buffer = await fetchImageBuffer(src);
-                const w = (el as HTMLImageElement).width || 400;
-                const h = (el as HTMLImageElement).height || 300;
-                const imgType = src.startsWith('data:image/png') || src.toLowerCase().includes('.png') ? 'png'
-                              : src.startsWith('data:image/gif') || src.toLowerCase().includes('.gif') ? 'gif'
-                              : src.startsWith('data:image/bmp') || src.toLowerCase().includes('.bmp') ? 'bmp'
-                              : 'jpg';
+                const dims = parseImageDimensions(el);
                 elements.push(new Paragraph({
-                    children: [
-                        new ImageRun({
-                            data: buffer,
-                            transformation: { width: w, height: h },
-                            type: imgType
-                        })
-                    ],
+                    children: [new ImageRun({ data: buffer, transformation: { width: dims.w, height: dims.h }, type: getImgType(src) })],
                     alignment: AlignmentType.CENTER,
                 }));
             } catch(e) { console.error('Image fetch error:', e); }
         }
     }
-    // Lists
+    // ── Lists ──
     else if (tag === 'ul' || tag === 'ol') {
-        const items = Array.from(el.children);
-        for (const li of items) {
-           const textRuns = await parseInlineContent(li as HTMLElement);
-           elements.push(new Paragraph({
-               children: textRuns,
-               bullet: tag === 'ul' ? { level: 0 } : undefined,
-               numbering: tag === 'ol' ? { reference: 'ol-num', level: 0 } : undefined,
-               spacing: { after: 120 },
-               alignment: AlignmentType.JUSTIFIED
-           }));
-        }
+        elements.push(...await parseList(el, tag === 'ul', 0));
     }
-    // Tables
+    // ── Tables (with colspan / rowspan) ──
     else if (tag === 'table') {
         const rows: TableRow[] = [];
-        const trs = Array.from(el.querySelectorAll('tr'));
-        for (const tr of trs) {
+        const trs = Array.from(el.querySelectorAll(':scope > tr, :scope > tbody > tr, :scope > thead > tr, :scope > tfoot > tr'));
+        for (const tr of trs as HTMLTableRowElement[]) {
             const cells: TableCell[] = [];
-            const tds = Array.from(tr.querySelectorAll('td, th'));
+            const tds = Array.from(tr.querySelectorAll(':scope > td, :scope > th')) as HTMLTableCellElement[];
             for (const td of tds) {
-                const textRuns = await parseInlineContent(td as HTMLElement);
+                const colSpan = td.colSpan || 1;
+                const rowSpan = td.rowSpan || 1;
+                const hasBlock = Array.from(td.children).some(c => /^(p|div|h[1-6]|ul|ol|table|blockquote)$/.test(c.tagName.toLowerCase()));
+                let cellChildren: any[];
+                if (hasBlock) {
+                    cellChildren = await parseHtmlToDocxElements(td, chapterIndex);
+                    if (cellChildren.length === 0) cellChildren = [new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 24 })] })];
+                } else {
+                    const runs = await parseInlineContent(td);
+                    cellChildren = [new Paragraph({ children: runs.length > 0 ? runs : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })], alignment: AlignmentType.CENTER })];
+                }
                 cells.push(new TableCell({
-                    children: [new Paragraph({ children: textRuns, alignment: AlignmentType.CENTER })],
-                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                    children: cellChildren,
+                    columnSpan: colSpan > 1 ? colSpan : undefined,
+                    rowSpan: rowSpan > 1 ? rowSpan : undefined,
+                    margins: { top: 100, bottom: 100, left: 120, right: 120 }
                 }));
             }
             if (cells.length > 0) rows.push(new TableRow({ children: cells }));
         }
         if (rows.length > 0) {
-            elements.push(new Table({
-                rows,
-                width: { size: 100, type: WidthType.PERCENTAGE }
-            }));
-            elements.push(new Paragraph({ text: '' })); // Spacing below table
+            elements.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+            elements.push(new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 24 })] }));
         }
     }
-    // General traversal for unknown wrappers
+    // ── blockquote / figure → recurse ──
+    else if (tag === 'blockquote' || tag === 'figure') {
+        for (let i = 0; i < el.childNodes.length; i++) elements.push(...await parseHtmlToDocxElements(el.childNodes[i], chapterIndex));
+    }
+    // ── figcaption → centred paragraph ──
+    else if (tag === 'figcaption') {
+        const runs = await parseInlineContent(el);
+        if (runs.length > 0) elements.push(new Paragraph({ children: runs, alignment: AlignmentType.CENTER, spacing: { before: 60, after: 180 } }));
+    }
+    // ── hr / br at block level ──
+    else if (tag === 'hr' || tag === 'br') {
+        elements.push(new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 24 })] }));
+    }
+    // ── Inline tags found at block level → wrap in Paragraph ──
+    else if (INLINE_TAGS_SET.has(tag)) {
+        const runs = await parseInlineContent(el);
+        if (runs.length > 0) elements.push(new Paragraph({ children: runs, alignment, spacing: { before: 120, after: 240, line: 360 } }));
+    }
+    // ── Generic container (div, section, article, …) ──
+    // Buffer consecutive inline nodes; flush as Paragraph when a block element appears
     else {
-      for (let i=0; i < el.childNodes.length; i++) {
-        const childRes = await parseHtmlToDocxElements(el.childNodes[i], chapterIndex);
-        elements.push(...childRes);
-      }
+        const pending: any[] = [];
+        const flush = () => {
+            if (pending.length > 0) {
+                elements.push(new Paragraph({ children: [...pending], alignment, spacing: { before: 120, after: 240, line: 360 } }));
+                pending.length = 0;
+            }
+        };
+        for (let i = 0; i < el.childNodes.length; i++) {
+            const child = el.childNodes[i];
+            if (child.nodeType === Node.TEXT_NODE) {
+                const t = child.textContent?.trim();
+                if (t) pending.push(new TextRun({ text: t, font: 'Times New Roman', size: 24 }));
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+                const ct = (child as HTMLElement).tagName.toLowerCase();
+                if (INLINE_TAGS_SET.has(ct)) {
+                    pending.push(...await parseInlineContent(child as HTMLElement));
+                } else {
+                    flush();
+                    elements.push(...await parseHtmlToDocxElements(child, chapterIndex));
+                }
+            }
+        }
+        flush();
     }
   }
   return elements;
@@ -185,16 +273,11 @@ async function parseInlineContent(
                 if (src) {
                     try {
                         const buffer = await fetchImageBuffer(src);
-                        const w = (childEl as HTMLImageElement).width || 400;
-                        const h = (childEl as HTMLImageElement).height || 300;
-                        const imgType = src.startsWith('data:image/png') || src.toLowerCase().includes('.png') ? 'png'
-                                       : src.startsWith('data:image/gif') || src.toLowerCase().includes('.gif') ? 'gif'
-                                       : src.startsWith('data:image/bmp') || src.toLowerCase().includes('.bmp') ? 'bmp'
-                                       : 'jpg';
+                        const dims = parseImageDimensions(childEl);
                         runs.push(new ImageRun({
                             data: buffer,
-                            transformation: { width: w, height: h },
-                            type: imgType
+                            transformation: { width: dims.w, height: dims.h },
+                            type: getImgType(src)
                         }));
                     } catch(e) { console.error('Image inline fetch error:', e); }
                 }
