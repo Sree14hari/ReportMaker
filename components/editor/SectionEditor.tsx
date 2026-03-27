@@ -14,6 +14,8 @@ import ImageResize from 'tiptap-extension-resize-image';
 import { useReportStore } from '@/lib/store';
 import EditorToolbar from './EditorToolbar';
 import TitlePageEditor from './TitlePageEditor';
+import AutoCitationModal from './AutoCitationModal';
+import { BookMarked } from 'lucide-react';
 
 export default function SectionEditor() {
   const sections = useReportStore((s) => s.sections);
@@ -25,6 +27,7 @@ export default function SectionEditor() {
   const [showTableDialog, setShowTableDialog] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
+  const [showCitationModal, setShowCitationModal] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -115,15 +118,30 @@ export default function SectionEditor() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Auto Citation Modal */}
+      {showCitationModal && (
+        <AutoCitationModal onClose={() => setShowCitationModal(false)} />
+      )}
+
       {/* Section title input */}
-      <div className="px-5 py-4 bg-white z-10 shadow-sm relative">
+      <div className="px-5 py-4 bg-white z-10 shadow-sm relative flex items-center gap-3">
         <input
           type="text"
           value={activeSection.title}
           onChange={(e) => updateSection(activeSection.id, { title: e.target.value })}
-          className="w-full text-2xl font-bold text-slate-800 border-none outline-none bg-transparent placeholder-slate-300 transition-colors focus:placeholder-slate-200"
+          className="flex-1 text-2xl font-bold text-slate-800 border-none outline-none bg-transparent placeholder-slate-300 transition-colors focus:placeholder-slate-200"
           placeholder="Section Title"
         />
+        {activeSection.type === 'references' && (
+          <button
+            onClick={() => setShowCitationModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-sm active:scale-95 flex-shrink-0"
+            title="Auto-insert citations into chapters based on your references"
+          >
+            <BookMarked size={13} />
+            Add Citations
+          </button>
+        )}
       </div>
 
       {/* Toolbar */}
