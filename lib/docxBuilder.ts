@@ -327,7 +327,7 @@ export async function generateProperDocx(store: ReportStore) {
                     { type: TabStopType.RIGHT, position: TabStopPosition.MAX }
                 ],
                 children: [
-                    new TextRun({ text: `DEPARTMENT OF ${store.meta.departmentShort || 'ECE'}`, font: 'Times New Roman', size: 24 }),
+                    new TextRun({ text: store.meta.footerContent || `DEPARTMENT OF ${store.meta.departmentShort || 'ECE'}`, font: 'Times New Roman', size: 24 }),
                     new TextRun({ text: '\t', font: 'Times New Roman', size: 24 }),
                     new TextRun({ children: [PageNumber.CURRENT], font: 'Times New Roman', size: 24 })
                 ]

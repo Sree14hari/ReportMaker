@@ -54,6 +54,16 @@ export default function TitlePageEditor() {
               <Field label="Header Content (Optional)">
                 <input type="text" value={meta.headerContent || ''} onChange={(e) => setMeta({ headerContent: e.target.value })} placeholder="Custom text to show on paginated headers" className={inputCls} />
               </Field>
+              <Field label="Footer Content (Optional)">
+                <input
+                  type="text"
+                  value={meta.footerContent || ''}
+                  onChange={(e) => setMeta({ footerContent: e.target.value })}
+                  placeholder={`DEPARTMENT OF ${meta.departmentShort || 'ECE'} (auto)`}
+                  className={inputCls}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Left-side text shown in the chapter footer. Leave blank to auto-generate from department short name.</p>
+              </Field>
               <Field label="Subtitle">
                 <input type="text" value={meta.subtitle} onChange={(e) => setMeta({ subtitle: e.target.value })} placeholder="e.g. Mini Project Report" className={inputCls} />
               </Field>
