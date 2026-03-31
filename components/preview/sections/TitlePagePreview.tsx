@@ -15,7 +15,7 @@ export default function TitlePagePreview() {
       >
         {/* Title */}
         <div className="pt-6 w-full">
-          <p className="font-bold uppercase text-[16pt] leading-snug tracking-wide">
+          <p className="font-bold text-[16pt] leading-snug tracking-wide">
             {meta.title || 'PROJECT TITLE'}
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function TitlePagePreview() {
     >
       {/* 1. Project Title */}
       <div className="pt-4">
-        <p className="font-bold uppercase text-[13pt] leading-snug">
+        <p className="font-bold text-[13pt] leading-snug">
           {meta.title || 'PROJECT TITLE'}
         </p>
       </div>
