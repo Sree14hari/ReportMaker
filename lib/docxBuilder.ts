@@ -42,21 +42,71 @@ export async function fetchImageBuffer(url: string): Promise<ArrayBuffer> {
 }
 
 // ── Image helpers ──
+async function getNaturalImageDimensions(src: string): Promise<{w: number, h: number}> {
+    if (typeof window === 'undefined') return { w: 600, h: 400 };
+    return new Promise((resolve) => {
+        const img = new window.Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 600, h: 400 });
+        img.src = src;
+    });
+}
+
 // DOMParser does NOT render images, so el.width / el.height are always 0.
 // Parse dimensions from the style attribute or HTML attributes instead.
-function parseImageDimensions(el: HTMLElement): { w: number; h: number } {
-    const styleW = el.style?.width  ? parseInt(el.style.width,  10) : 0;
-    const styleH = el.style?.height ? parseInt(el.style.height, 10) : 0;
-    const attrW  = parseInt(el.getAttribute('width')  || '0', 10) || 0;
-    const attrH  = parseInt(el.getAttribute('height') || '0', 10) || 0;
-    const domW   = (el as any).naturalWidth  || (el as any).width  || 0;
-    const domH   = (el as any).naturalHeight || (el as any).height || 0;
-    let w = styleW || attrW || domW || 400;
-    let h = styleH || attrH || domH || 300;
+async function parseImageDimensions(el: HTMLElement, src: string): Promise<{ w: number; h: number }> {
+    const naturalDims = await getNaturalImageDimensions(src);
+    const origW = naturalDims.w || 600;
+    const origH = naturalDims.h || 400;
+
+    let explicitW = 0;
+    let explicitH = 0;
+
+    const styleW = el.style?.width;
+    if (styleW) {
+        if (styleW.includes('%')) {
+            explicitW = Math.round(600 * (parseInt(styleW, 10) / 100));
+        } else {
+            explicitW = parseInt(styleW, 10);
+        }
+    } else {
+        explicitW = parseInt(el.getAttribute('width') || '0', 10);
+    }
+
+    const styleH = el.style?.height;
+    if (styleH) {
+        if (styleH.includes('%')) {
+            explicitH = Math.round(800 * (parseInt(styleH, 10) / 100));
+        } else {
+            explicitH = parseInt(styleH, 10);
+        }
+    } else {
+        explicitH = parseInt(el.getAttribute('height') || '0', 10);
+    }
+
+    let w = origW;
+    let h = origH;
+
+    if (explicitW && explicitH) {
+        w = explicitW;
+        h = explicitH;
+    } else if (explicitW) {
+        w = explicitW;
+        h = Math.round(origH * (explicitW / origW));
+    } else if (explicitH) {
+        h = explicitH;
+        w = Math.round(origW * (explicitH / origH));
+    }
+
     // Cap to A4 printable width in points (~600pt)
-    if (w > 600) { h = Math.round(h * 600 / w); w = 600; }
-    if (w < 1) w = 400;
-    if (h < 1) h = 300;
+    if (w > 600) {
+        h = Math.round(h * 600 / w);
+        w = 600;
+    }
+    
+    if (w < 1) w = 600;
+    if (h < 1) h = 400;
+
     return { w, h };
 }
 
@@ -151,7 +201,7 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null, 
         if (src) {
             try {
                 const buffer = await fetchImageBuffer(src);
-                const dims = parseImageDimensions(el);
+                const dims = await parseImageDimensions(el, src);
                 elements.push(new Paragraph({
                     children: [new ImageRun({ data: buffer, transformation: { width: dims.w, height: dims.h }, type: getImgType(src) })],
                     alignment: AlignmentType.CENTER,
@@ -276,7 +326,7 @@ async function parseInlineContent(
                 if (src) {
                     try {
                         const buffer = await fetchImageBuffer(src);
-                        const dims = parseImageDimensions(childEl);
+                        const dims = await parseImageDimensions(childEl, src);
                         runs.push(new ImageRun({
                             data: buffer,
                             transformation: { width: dims.w, height: dims.h },

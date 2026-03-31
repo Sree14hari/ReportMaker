@@ -150,13 +150,21 @@ export default function Home() {
           </button>
           <ProjectSyncMenu />
           <TemplateDropdown />
-          <button
-            onClick={() => setShowInfo(true)}
-            title="Tips & Info"
-            className="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-100"
-          >
-            <Info size={18} />
-          </button>
+          {/* Pulsating Pro Tip */}
+          <div className="relative group flex items-center justify-center">
+            <button className="p-2 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-50 transition-colors border border-transparent hover:border-amber-100 relative">
+              <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+            </button>
+            <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none text-left leading-relaxed">
+              <span className="font-semibold text-amber-300 block mb-1">Pro Tip: Best Results</span>
+              After everything is done, export as Word, add your final touches there, and from there export as PDF for the best results!
+              <div className="absolute -top-1 right-3 w-3 h-3 bg-slate-800 rotate-45"></div>
+            </div>
+          </div>
           <PDFDownloadButton />
         </div>
       </header>
@@ -182,59 +190,6 @@ export default function Home() {
             <p className="text-sm font-medium text-slate-600 text-center px-4 leading-relaxed">
               If you found this tool helpful, consider supporting its development! Every contribution helps me keep the servers running. ❤️
             </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Info Modal ── */}
-      {showInfo && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-[480px] max-w-[95vw] p-8 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close */}
-            <button
-              onClick={() => setShowInfo(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Icon + Title */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-                <Info size={20} />
-              </div>
-              <h2 className="text-lg font-bold text-slate-800">Tips for Best Results</h2>
-            </div>
-
-            {/* Message */}
-            <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
-              <p>
-                ⚠️ <strong className="text-slate-800">Minor spacing or formatting issues</strong> may occasionally appear in the exported PDF — this is normal due to browser rendering differences.
-              </p>
-              <p>
-                ✅ For a perfectly polished document, follow these steps:
-              </p>
-              <ol className="list-decimal list-inside space-y-2 pl-2">
-                <li>Export the PDF using the <strong>Export PDF</strong> button.</li>
-                <li>Go to <strong>iLovePDF</strong> and convert it to a Word (.docx) file.</li>
-                <li>Open the Word file and make any final tweaks — spacing, fonts, margin fixes.</li>
-                <li>Re-export as PDF if needed.</li>
-              </ol>
-            </div>
-
-            {/* CTA */}
-            <a
-              href="https://www.ilovepdf.com/pdf_to_word"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
-            >
-              <ExternalLink size={15} />
-              Open iLovePDF — PDF to Word
-            </a>
           </div>
         </div>
       )}
