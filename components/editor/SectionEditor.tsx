@@ -153,7 +153,7 @@ export default function SectionEditor() {
 
       {/* Editor */}
       <div className="flex-1 overflow-y-auto bg-slate-50/50 p-4 sm:p-8">
-        <div className="max-w-4xl mx-auto bg-white shadow-sm border border-gray-200/60 rounded-sm min-h-[800px] hover:shadow-md transition-shadow duration-300">
+        <div className={`max-w-4xl mx-auto bg-white shadow-sm border border-gray-200/60 rounded-sm min-h-[800px] hover:shadow-md transition-shadow duration-300 ${activeSection.type === 'references' ? 'is-references' : ''}`}>
           <EditorContent editor={editor} />
         </div>
       </div>

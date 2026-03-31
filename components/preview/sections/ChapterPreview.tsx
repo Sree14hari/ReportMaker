@@ -74,7 +74,7 @@ export default function ChapterPreview({ section, chapterIndex, contentHtml, hid
         )
       )}
       <div
-        className={`report-content text-[12pt] leading-relaxed text-justify ${chapterIndex ? 'numbered-chapter' : ''}`}
+        className={`report-content text-[12pt] leading-relaxed text-justify ${chapterIndex ? 'numbered-chapter' : ''} ${section.type === 'references' ? 'is-references' : ''}`}
         style={chapterIndex ? { '--chapter-index': `"${chapterIndex}"` } as React.CSSProperties : undefined}
         dangerouslySetInnerHTML={{ __html: resolved }}
       />

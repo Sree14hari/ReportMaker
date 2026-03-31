@@ -68,7 +68,7 @@ function getImgType(src: string): 'png' | 'jpg' | 'gif' | 'bmp' {
 }
 
 // ── Recursive list parser (handles nesting) ──
-async function parseList(el: HTMLElement, isBullet: boolean, depth: number): Promise<any[]> {
+async function parseList(el: HTMLElement, isBullet: boolean, depth: number, isReferences: boolean = false): Promise<any[]> {
     const elems: any[] = [];
     const lis = Array.from(el.children).filter(c => c.tagName.toLowerCase() === 'li');
     for (const li of lis) {
@@ -91,7 +91,7 @@ async function parseList(el: HTMLElement, isBullet: boolean, depth: number): Pro
             spacing: { after: 80 }, alignment: AlignmentType.JUSTIFIED,
         }));
         for (const nested of nestedLists) {
-            elems.push(...await parseList(nested, nested.tagName.toLowerCase() === 'ul', depth + 1));
+            elems.push(...await parseList(nested, nested.tagName.toLowerCase() === 'ul', depth + 1, isReferences));
         }
     }
     return elems;
@@ -100,7 +100,7 @@ async function parseList(el: HTMLElement, isBullet: boolean, depth: number): Pro
 const INLINE_TAGS_SET = new Set(['span','strong','em','b','i','u','s','strike','code','mark','a','small','label','sup','sub','br','img']);
 
 // ── Main HTML → DOCX block-level parser ──
-async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null): Promise<any[]> {
+async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null, isReferences: boolean = false): Promise<any[]> {
   const elements: any[] = [];
 
   if (node.nodeType === Node.TEXT_NODE) {
@@ -129,16 +129,19 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
         elements.push(new Paragraph({
             children: textRuns.length > 0 ? textRuns : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
             heading: level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
-            alignment: AlignmentType.CENTER,
+            alignment: level === 1 ? AlignmentType.CENTER : AlignmentType.LEFT,
             spacing: { before: 240, after: 120 }
         }));
     }
     // ── Paragraph ──
     else if (tag === 'p') {
         const textRuns = await parseInlineContent(el);
+        const text = el.textContent?.trim() || '';
+        const isRefItem = isReferences && (/^\[?\d+\]?[\.\s]/.test(text) || /\[\d+\]/.test(text));
         elements.push(new Paragraph({
             children: textRuns.length > 0 ? textRuns : [new TextRun({ text: '', font: 'Times New Roman', size: 24 })],
             alignment,
+            indent: isRefItem ? { left: 500, hanging: 500 } : undefined,
             spacing: { before: 120, after: 240, line: 360 }
         }));
     }
@@ -158,7 +161,7 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
     }
     // ── Lists ──
     else if (tag === 'ul' || tag === 'ol') {
-        elements.push(...await parseList(el, tag === 'ul', 0));
+        elements.push(...await parseList(el, tag === 'ul', 0, isReferences));
     }
     // ── Tables (with colspan / rowspan) ──
     else if (tag === 'table') {
@@ -173,7 +176,7 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
                 const hasBlock = Array.from(td.children).some(c => /^(p|div|h[1-6]|ul|ol|table|blockquote)$/.test(c.tagName.toLowerCase()));
                 let cellChildren: any[];
                 if (hasBlock) {
-                    cellChildren = await parseHtmlToDocxElements(td, chapterIndex);
+                    cellChildren = await parseHtmlToDocxElements(td, chapterIndex, isReferences);
                     if (cellChildren.length === 0) cellChildren = [new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 24 })] })];
                 } else {
                     const runs = await parseInlineContent(td);
@@ -195,7 +198,7 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
     }
     // ── blockquote / figure → recurse ──
     else if (tag === 'blockquote' || tag === 'figure') {
-        for (let i = 0; i < el.childNodes.length; i++) elements.push(...await parseHtmlToDocxElements(el.childNodes[i], chapterIndex));
+        for (let i = 0; i < el.childNodes.length; i++) elements.push(...await parseHtmlToDocxElements(el.childNodes[i], chapterIndex, isReferences));
     }
     // ── figcaption → centred paragraph ──
     else if (tag === 'figcaption') {
@@ -232,7 +235,7 @@ async function parseHtmlToDocxElements(node: Node, chapterIndex: number | null):
                     pending.push(...await parseInlineContent(child as HTMLElement));
                 } else {
                     flush();
-                    elements.push(...await parseHtmlToDocxElements(child, chapterIndex));
+                    elements.push(...await parseHtmlToDocxElements(child, chapterIndex, isReferences));
                 }
             }
         }
@@ -354,7 +357,7 @@ export async function generateProperDocx(store: ReportStore) {
             }
 
             if (root) {
-                const elements = await parseHtmlToDocxElements(root, isChapter ? currentChapterIndex : null);
+                const elements = await parseHtmlToDocxElements(root, isChapter ? currentChapterIndex : null, section.type === 'references');
                 parsedElements.push(...elements);
             }
         }
@@ -421,9 +424,9 @@ export async function generateProperDocx(store: ReportStore) {
     const doc = new Document({
         styles: {
             default: {
-                heading1: { run: { color: "000000", font: "Times New Roman", size: 32, bold: true }, paragraph: { spacing: { before: 240, after: 120 } } },
-                heading2: { run: { color: "000000", font: "Times New Roman", size: 28, bold: true }, paragraph: { spacing: { before: 240, after: 120 } } },
-                heading3: { run: { color: "000000", font: "Times New Roman", size: 24, bold: true }, paragraph: { spacing: { before: 240, after: 120 } } }
+                heading1: { run: { color: "000000", font: "Times New Roman", size: 32, bold: true }, paragraph: { alignment: AlignmentType.CENTER, spacing: { before: 240, after: 120 } } },
+                heading2: { run: { color: "000000", font: "Times New Roman", size: 28, bold: true }, paragraph: { alignment: AlignmentType.LEFT, spacing: { before: 240, after: 120 } } },
+                heading3: { run: { color: "000000", font: "Times New Roman", size: 24, bold: true }, paragraph: { alignment: AlignmentType.LEFT, spacing: { before: 240, after: 120 } } }
             }
         },
         numbering: {

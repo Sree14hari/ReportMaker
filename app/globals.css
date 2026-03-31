@@ -133,6 +133,13 @@ body {
   margin: 0.8em 0 0.3em;
 }
 
+/* IEEE References Hanging Indent */
+.report-content.is-references p,
+.is-references .ProseMirror p {
+  padding-left: 36px;
+  text-indent: -36px;
+}
+
 /* Chapter Numbering */
 .report-content.numbered-chapter {
   counter-reset: h2counter;
