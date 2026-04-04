@@ -125,19 +125,19 @@ export default function CertificatePreview({ section }: CertificatePreviewProps)
             <p className="font-bold">{meta.guideName || 'Internal Supervisor'}</p>
             <p className="font-bold">Internal Supervisor</p>
             <p>({meta.guideDesignation || 'Assistant Professor'})</p>
-            <p>Dept.of {meta.departmentShort || 'CSE'}</p>
+            <p>Dept.of {meta.guideDepartment || meta.departmentShort || 'CSE'}</p>
           </div>
           <div className="space-y-1 text-center">
             <p className="font-bold">{meta.projectCoordinatorName || 'Project Coordinator'}</p>
             <p className="font-bold">Project Coordinator</p>
             <p>({meta.projectCoordinatorDesignation || 'Assistant Professor'})</p>
-            <p>Dept. of {meta.departmentShort || 'CSE'}</p>
+            <p>Dept. of {meta.projectCoordinatorDepartment || meta.departmentShort || 'CSE'}</p>
           </div>
           <div className="space-y-1 text-right">
             <p className="font-bold">{meta.hodName || 'Head of Department'}</p>
             <p className="font-bold">Head Of Department</p>
             <p>({meta.hodDesignation || 'Head Of Department'})</p>
-            <p>Dept. of {meta.departmentShort || 'CSE'}</p>
+            <p>Dept. of {meta.hodDepartment || meta.departmentShort || 'CSE'}</p>
           </div>
         </div>
       </div>
@@ -201,13 +201,13 @@ export default function CertificatePreview({ section }: CertificatePreviewProps)
           <div className="text-left space-y-4">
             <p>{meta.guideName || 'Guide Name'}</p>
             <p>{meta.guideDesignation || 'Mini Project Guide'}</p>
-            <p>Department of {meta.departmentShort || 'ECE'}</p>
+            <p>Department of {meta.guideDepartment || meta.departmentShort || 'ECE'}</p>
             <p>{meta.collegeShort || 'SBCE, Pattor'}</p>
           </div>
           <div className="text-left space-y-4">
             <p>{meta.hodName || 'HOD Name'}</p>
             <p>{meta.hodDesignation || 'Mini Project Coordinator & HOD'}</p>
-            <p>Department of {meta.departmentShort || 'ECE'},</p>
+            <p>Department of {meta.hodDepartment || meta.departmentShort || 'ECE'},</p>
             <p>{meta.collegeShort || 'SBCE, Pattor'}</p>
           </div>
         </div>

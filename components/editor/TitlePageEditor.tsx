@@ -179,31 +179,56 @@ export default function TitlePageEditor() {
           {/* Guide & HOD */}
           <section>
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 bg-slate-50 p-2 rounded">Personnel</h3>
-            <div className="space-y-4 px-2">
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Internal Supervisor / Guide Name">
-                  <input type="text" value={meta.guideName} onChange={(e) => setMeta({ guideName: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="Guide Designation">
-                  <input type="text" value={meta.guideDesignation} onChange={(e) => setMeta({ guideDesignation: e.target.value })} className={inputCls} />
-                </Field>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Project Coordinator Name">
-                  <input type="text" value={meta.projectCoordinatorName || ''} onChange={(e) => setMeta({ projectCoordinatorName: e.target.value })} placeholder="e.g. Mrs. Geethumol P V" className={inputCls} />
-                </Field>
-                <Field label="Project Coordinator Designation">
-                  <input type="text" value={meta.projectCoordinatorDesignation || ''} onChange={(e) => setMeta({ projectCoordinatorDesignation: e.target.value })} className={inputCls} />
-                </Field>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="HOD Name">
-                  <input type="text" value={meta.hodName} onChange={(e) => setMeta({ hodName: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="HOD Designation">
-                  <input type="text" value={meta.hodDesignation} onChange={(e) => setMeta({ hodDesignation: e.target.value })} className={inputCls} />
+            <div className="space-y-6 px-2">
+              {/* Guide */}
+              <div className="p-3 border border-slate-100 rounded-lg bg-slate-50/50 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Internal Supervisor / Guide</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name">
+                    <input type="text" value={meta.guideName} onChange={(e) => setMeta({ guideName: e.target.value })} className={inputCls} />
+                  </Field>
+                  <Field label="Designation">
+                    <input type="text" value={meta.guideDesignation} onChange={(e) => setMeta({ guideDesignation: e.target.value })} className={inputCls} />
+                  </Field>
+                </div>
+                <Field label="Department (leave blank to use Dept. Short Name)">
+                  <input type="text" value={meta.guideDepartment || ''} onChange={(e) => setMeta({ guideDepartment: e.target.value })} placeholder={`e.g. ${meta.departmentShort || 'ECE'}`} className={inputCls} />
                 </Field>
               </div>
+
+              {/* Project Coordinator */}
+              <div className="p-3 border border-slate-100 rounded-lg bg-slate-50/50 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Project Coordinator</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name">
+                    <input type="text" value={meta.projectCoordinatorName || ''} onChange={(e) => setMeta({ projectCoordinatorName: e.target.value })} placeholder="e.g. Mrs. Geethumol P V" className={inputCls} />
+                  </Field>
+                  <Field label="Designation">
+                    <input type="text" value={meta.projectCoordinatorDesignation || ''} onChange={(e) => setMeta({ projectCoordinatorDesignation: e.target.value })} className={inputCls} />
+                  </Field>
+                </div>
+                <Field label="Department (leave blank to use Dept. Short Name)">
+                  <input type="text" value={meta.projectCoordinatorDepartment || ''} onChange={(e) => setMeta({ projectCoordinatorDepartment: e.target.value })} placeholder={`e.g. ${meta.departmentShort || 'ECE'}`} className={inputCls} />
+                </Field>
+              </div>
+
+              {/* HOD */}
+              <div className="p-3 border border-slate-100 rounded-lg bg-slate-50/50 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Head of Department</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name">
+                    <input type="text" value={meta.hodName} onChange={(e) => setMeta({ hodName: e.target.value })} className={inputCls} />
+                  </Field>
+                  <Field label="Designation">
+                    <input type="text" value={meta.hodDesignation} onChange={(e) => setMeta({ hodDesignation: e.target.value })} className={inputCls} />
+                  </Field>
+                </div>
+                <Field label="Department (leave blank to use Dept. Short Name)">
+                  <input type="text" value={meta.hodDepartment || ''} onChange={(e) => setMeta({ hodDepartment: e.target.value })} placeholder={`e.g. ${meta.departmentShort || 'ECE'}`} className={inputCls} />
+                </Field>
+              </div>
+
+              {/* Principal */}
               <Field label="Principal Name">
                 <input type="text" value={meta.principalName || ''} onChange={(e) => setMeta({ principalName: e.target.value })} className={inputCls} />
               </Field>

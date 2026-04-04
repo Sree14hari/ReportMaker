@@ -138,14 +138,14 @@ export async function buildCertificateDocx(store: ReportStore, section: ReportSe
                       children: [
                           new Paragraph({ children: [cText(meta.guideName || 'Guide Name', true, 24)], alignment: AlignmentType.LEFT }),
                           new Paragraph({ children: [cText(meta.guideDesignation || 'Guide', false, 24)], alignment: AlignmentType.LEFT }),
-                          new Paragraph({ children: [cText(`Dept. of ${meta.departmentShort || 'ECE'}`, false, 24)], alignment: AlignmentType.LEFT })
+                          new Paragraph({ children: [cText(`Dept. of ${meta.guideDepartment || meta.departmentShort || 'ECE'}`, false, 24)], alignment: AlignmentType.LEFT })
                       ]
                   }),
                   new TableCell({
                       children: [
                           new Paragraph({ children: [cText(meta.hodName || 'HOD Name', true, 24)], alignment: AlignmentType.RIGHT }),
                           new Paragraph({ children: [cText(meta.hodDesignation || 'HOD', false, 24)], alignment: AlignmentType.RIGHT }),
-                          new Paragraph({ children: [cText(`Dept. of ${meta.departmentShort || 'ECE'}`, false, 24)], alignment: AlignmentType.RIGHT })
+                          new Paragraph({ children: [cText(`Dept. of ${meta.hodDepartment || meta.departmentShort || 'ECE'}`, false, 24)], alignment: AlignmentType.RIGHT })
                       ]
                   })
               ]

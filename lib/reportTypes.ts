@@ -39,11 +39,14 @@ export interface ReportMeta {
   titlePageGap?: number;
   guideName: string;
   guideDesignation: string;
+  guideDepartment?: string;
   hodName: string;
   hodDesignation: string;
+  hodDepartment?: string;
   principalName: string;
   projectCoordinatorName?: string;
   projectCoordinatorDesignation?: string;
+  projectCoordinatorDepartment?: string;
   logoUrl: string;
 }
 
