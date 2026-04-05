@@ -116,7 +116,7 @@ export async function downloadAsDOCX(elementId: string, filename: string) {
     body { font-family: 'Times New Roman', Times, serif; }
     h1, h2, h3 { text-align: center; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid black; padding: 5px; text-align: center;}
+    th, td { border: 1px solid black; padding: 5px; text-align: center; vertical-align: top; }
     p { margin-bottom: 1em; text-align: justify; }
     .page-break-wrapper { page-break-after: always; clear: both; }
   </style>

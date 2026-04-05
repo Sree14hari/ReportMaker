@@ -72,6 +72,7 @@ body {
   border: 1px solid #cbd5e1;
   padding: 6px 10px;
   min-width: 60px;
+  vertical-align: top;
 }
 
 .ProseMirror th {
@@ -184,6 +185,7 @@ body {
 .report-content td, .report-content th {
   border: 1px solid #000;
   padding: 6px 10px;
+  vertical-align: top;
 }
 
 .report-content th {

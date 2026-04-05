@@ -200,6 +200,15 @@ export async function paginateHtml(
   };
 
   const isHeading = (el: HTMLElement) => /^h[1-6]$/i.test(el.tagName);
+  const isTableCaptionLike = (el: HTMLElement) => {
+    const tag = el.tagName.toLowerCase();
+    if (!['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) return false;
+
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 80) return false;
+
+    return /^(tab(le)?\s*\d+[.:\-]?)|^(table\s*(no\.?|number)?\s*\d+[.:\-]?)|^(figure\s*\d+[.:\-]?)/i.test(text);
+  };
 
   for (let i = 0; i < children.length; i++) {
     const el = children[i] as HTMLElement;
@@ -223,7 +232,7 @@ export async function paginateHtml(
     //    but the following element does NOT fit, move the heading to the next page too.
     if (
       currentPageHtml !== '' &&
-      isHeading(el) &&
+      (isHeading(el) || isTableCaptionLike(el)) &&
       currentHeight + nodeHeight <= targetHeight   // heading fits on current page
     ) {
       const next = children[i + 1] as HTMLElement | undefined;
@@ -234,7 +243,7 @@ export async function paginateHtml(
         const nextEffectiveMt = Math.max(0, nextMt - mb);
         const nextNodeHeight = next.offsetHeight + nextEffectiveMt + nextMb;
         // If heading + next element together don't fit, push the heading to next page
-        if (currentHeight + nodeHeight + nextNodeHeight > targetHeight) {
+        if (currentHeight + nodeHeight + nextNodeHeight > targetHeight && (isHeading(el) || (isTableCaptionLike(el) && next.tagName.toLowerCase() === 'table'))) {
           pages.push(currentPageHtml);
           currentPageHtml = el.outerHTML;
           currentHeight = el.offsetHeight + mt + mb;
