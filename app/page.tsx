@@ -17,6 +17,7 @@ export default function Home() {
   const [previewWidth, setPreviewWidth] = useState(500);
   const [showInfo, setShowInfo] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
+  const [showAvailabilityNotice, setShowAvailabilityNotice] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const isDragging = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -24,7 +25,18 @@ export default function Home() {
   useEffect(() => {
     // Hide splash screen after 1.8 seconds
     const timer = setTimeout(() => setShowSplash(false), 1800);
+
+    const noticeDismissed = sessionStorage.getItem('site-availability-notice-dismissed');
+    if (!noticeDismissed) {
+      setShowAvailabilityNotice(true);
+    }
+
     return () => clearTimeout(timer);
+  }, []);
+
+  const closeAvailabilityNotice = useCallback(() => {
+    setShowAvailabilityNotice(false);
+    sessionStorage.setItem('site-availability-notice-dismissed', '1');
   }, []);
 
   const onMouseDown = useCallback(() => {
@@ -190,6 +202,38 @@ export default function Home() {
             <p className="text-sm font-medium text-slate-600 text-center px-4 leading-relaxed">
               If you found this tool helpful, consider supporting its development! Every contribution helps me keep the servers running. ❤️
             </p>
+          </div>
+        </div>
+      )}
+
+      {showAvailabilityNotice && (
+        <div
+          className="fixed inset-0 z-250 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={closeAvailabilityNotice}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 relative max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeAvailabilityNotice}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close notice"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-slate-800 mb-3">Important Notice</h2>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              This site will no longer be available after 7 April 2026. Please save your project as a Word file.
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button
+                onClick={closeAvailabilityNotice}
+                className="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition-colors"
+              >
+                I Understand
+              </button>
+            </div>
           </div>
         </div>
       )}
