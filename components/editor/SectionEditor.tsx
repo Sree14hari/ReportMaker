@@ -39,8 +39,8 @@ export default function SectionEditor() {
       TableRow,
       TableHeader,
       TableCell,
-      // @ts-ignore
-      ImageResize.configure({ allowBase64: true, inline: true }),
+      
+      ImageResize.configure({ inline: true }),
       Placeholder.configure({ placeholder: 'Start writing your section content here...' }),
     ],
     content: activeSection?.content ?? '',
